@@ -1,0 +1,210 @@
+import java.util.regex.Pattern
+
+apply plugin: 'com.android.library'
+
+buildscript {
+    repositories {
+        jcenter()
+        maven { url "https://jitpack.io" }
+    }
+    dependencies {
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.1'
+    }
+}
+
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'maven'
+// disable this to upload to only bintray
+// maven sync is probe cause error
+//apply plugin: 'maven-publish'
+
+group = 'com.github.deckyfx'
+version = versionName
+//artifactId and groupId variable is reserved
+
+def groupName = group
+def artifactName = 'httprequest'
+def siteUrl = 'https://github.com/deckyfx/' + artifactName   // Homepage URL of the library
+def gitUrl = 'https://github.com/deckyfx/' + artifactName + '.git' // Git repository URL
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.3"
+
+    defaultConfig {
+        minSdkVersion 14
+        targetSdkVersion 23
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+    }
+    android {
+        lintOptions {
+            abortOnError false
+        }
+    }
+}
+
+// Automatic versioning
+//ext.INCREASE_VERSION_NAME_WHEN_RUN_TASK = ""
+//ext.INCREASE_VERSION_CODE_WHEN_RUN_TASK = ""
+//apply from: 'https://raw.githubusercontent.com/deckyfx/AndroidTemplate/master/automatic-versioning.gradle'
+// Automatic sqlite management
+apply from: 'https://raw.githubusercontent.com/deckyfx/gdgen/master/gdgen.gradle'
+
+configurations {
+    doc {
+        transitive false
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+
+    testCompile 'junit:junit:4.12'
+
+    compile 'com.github.franmontiel:PersistentCookieJar:v1.0.0'
+    compile 'com.squareup.okhttp3:okhttp:3.2.0'
+    compile 'com.squareup.okhttp3:logging-interceptor:3.2.0'
+    compile 'com.github.deckyfx:dbhelper:0.0.1'
+}
+
+// Disable this to upload as JAR
+/*
+install {
+    repositories.mavenInstaller {
+        // This generates POM.xml with proper parameters
+        pom {
+            project {
+                packaging 'aar' // or jar
+
+                // Add your description here
+                name artifactName
+                description = 'Adapter View made easy' // TODO
+                url siteUrl
+
+                // Set your license
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id 'df1412' // TODO
+                        name 'Decky Fiyemonda' // TODO
+                        email 'decky.fx@gmail.com' // TODO
+                    }
+                }
+                scm {
+                    connection gitUrl
+                    developerConnection gitUrl
+                    url siteUrl
+                }
+            }
+        }
+    }
+}
+*/
+
+if (project.hasProperty("android")) { // Android libraries
+    task sourcesJar(type: Jar) {
+        classifier = 'sources'
+        from android.sourceSets.main.java.srcDirs
+    }
+
+    task javadoc(type: Javadoc) {
+        source = android.sourceSets.main.java.srcDirs
+        classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+        include '**/*.java'
+        options.addStringOption('Xdoclint:none', '-quiet')
+        failOnError false
+    }
+} else { // Java libraries
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+bintray {
+    user = bintrayUser;
+    key = bintrayApikey;
+    configurations = ['archives'] //When uploading configuration files
+    pkg {
+        repo = 'android'
+        name = artifactName
+        userOrg = user
+        licenses = ['Apache-2.0']
+        websiteUrl = siteUrl
+        issueTrackerUrl = siteUrl + '/issues'
+        vcsUrl = gitUrl
+        labels = ['android', 'utilities', 'adapter']
+        publicDownloadNumbers = true
+        attributes= ['a': ['ay1', 'ay2'], 'b': ['bee'], c: 'cee'] //Optional package-level attributes
+
+        githubRepo = 'deckyfx/' + artifactName //Optional Github repository
+        githubReleaseNotesFile = 'README.md' //Optional Github readme file
+
+        dryRun = false //[Default: false] Whether to run this as dry-run, without deploying
+        publish = true //[Default: false] Whether version should be auto published after an upload
+        override = true //[Default: false] Whether to override version artifacts already published
+
+        version {
+            name = versionName //Bintray logical version name
+            desc = versionName //Optional - Version-specific description'
+            released  = new java.util.Date() //Optional - Date of the version release. 2 possible values: date in the format of 'yyyy-MM-dd'T'HH:mm:ss.SSSZZ' OR a java.util.Date instance
+            vcsTag = versionName
+            attributes = ['gradle-plugin': 'com.use.less:com.use.less.gradle:gradle-useless-plugin'] //Optional version-level attributes
+
+            //Optional configuration for GPG signing
+            gpg {
+                sign = true //Determines whether to GPG sign the files. The default is false
+                passphrase = 'kaito_kid' //Optional. The passphrase for GPG signing'
+            }
+        }
+    }
+}
+
+// doc/source/jar  ,if no this part ,only aar and pom file will be published
+android.libraryVariants.all { variant ->
+    def name = variant.buildType.name
+    if (name.equals(com.android.builder.core.BuilderConstants.DEBUG)) {
+        // return;
+    }
+    def task = project.tasks.create "jar${name.capitalize()}", Jar
+    task.dependsOn variant.javaCompile
+    task.from variant.javaCompile.destinationDir
+    artifacts.add('archives', task);
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.4'
+}
