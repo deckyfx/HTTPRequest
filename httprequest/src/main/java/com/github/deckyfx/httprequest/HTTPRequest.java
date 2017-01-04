@@ -14,7 +14,6 @@ import com.franmontiel.persistentcookiejar.PersistentCookieJar;
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
 import com.github.deckyfx.httprequest.dao.DaoMaster;
-import com.github.deckyfx.httprequest.R;
 
 import org.json.JSONObject;
 
@@ -50,14 +49,26 @@ import okhttp3.logging.HttpLoggingInterceptor;
 /**
  * Created by decky on 9/8/16.
  */
-public class Request {
+public class HTTPRequest {
     public static class Method {
         public static final String GET       = "GET";
         public static final String POST      = "POST";
         public static final String PUT       = "PUT";
         public static final String DELETE    = "DELETE";
     }
-    public static final String REQUEST_CACHE_DB_NAME       = "httprequest.db";
+    public static class ErrorString {
+        public static final String NO_ACTIVE_INTERNET           = "No active internet available";
+        public static final String REQUEST_ERROR                = "Request Error";
+        public static final String FAILED_RESPONSE              = "Server return failed response";
+        public static final String NULL_CONTENTS                = "Server return null contents";
+        public static final String REQUEST_FAILED               = "Request failed";
+        public static final String ERROR_LOADING_DATA           = "Error loading data";
+        public static final String REQUEST_TIMEOUT              = "Request timeout";
+        public static final String CANNOT_CONNECT_TO_INTERNET   = "Can not connect to server";
+
+    }
+
+    public static final String REQUEST_CACHE_DB_NAME            = "httprequest.db";
 
     private Context mContext;
     private OkHttpClient mHTTPClient;
@@ -69,7 +80,7 @@ public class Request {
     private int mWriteTimeOut = 30;
     private int mReadTimeOut = 30;
 
-    public Request(Context context){
+    public HTTPRequest(Context context){
         this.mContext = context;
         this.setBaseURL("");
         this.DB = new DBHelper(this.mContext, DaoMaster.class, REQUEST_CACHE_DB_NAME);
@@ -109,7 +120,7 @@ public class Request {
             String prefix = "";
             if (!baseLastChar.equals("/") && !pathFirstChar.equals("/")) {
                 prefix = "/";
-            } else if (baseLastChar.equals("/") && !pathFirstChar.equals("/")) {
+            } else if (baseLastChar.equals("/") && pathFirstChar.equals("/")) {
                 path = path.substring(path.indexOf("/"));
             }
             return this.mBaseURL + prefix + path;
@@ -179,7 +190,7 @@ public class Request {
 
     public void send(Context ctx, String url, String method, Map<String, Object> params, Map<String, Object> headers, int requestId, RequestHandler requestHandler) {
         if (method == null) {
-            method = Request.Method.GET;
+            method = HTTPRequest.Method.GET;
         }
         if (params == null) {
             params = new HashMap<String, Object>();
@@ -517,10 +528,10 @@ public class Request {
         private DBHelper db;
         private Context ctx;
         private RequestHandler requestHandler;
-        private Request request;
+        private HTTPRequest request;
         private Call mCall;
 
-        public RequestCallBack(Request request, Context ctx, Call call, RequestHandler requestHandler) {
+        public RequestCallBack(HTTPRequest request, Context ctx, Call call, RequestHandler requestHandler) {
             this.ctx = ctx;
             this.request = request;
             this.db = request.DB;
@@ -532,14 +543,14 @@ public class Request {
         public void onFailure(Call call, IOException e) {
             String errorMessage = e.getMessage();
             if (e != null) {
-                if (errorMessage.equals(this.ctx.getString(R.string.http_request_error_requestfailed))) {
+                if (errorMessage.equals(ErrorString.REQUEST_FAILED)) {
                     // Skip general error content if there is previous error
                     return;
-                } else if (errorMessage.equals(this.ctx.getString(R.string.http_request_error_serverresponse_nullcontents))) {
+                } else if (errorMessage.equals(ErrorString.NULL_CONTENTS)) {
                     // Skip null contents error content if there is previous error
                     return;
                 } else if (e instanceof java.net.SocketTimeoutException) {
-                    errorMessage = this.ctx.getString(R.string.http_request_error_request_timeout);
+                    errorMessage = ErrorString.REQUEST_TIMEOUT;
                 } else {
 
                 }
@@ -580,7 +591,7 @@ public class Request {
             }
             if ((request_code != 200 && request_code != 230)) {
                 if (responMessage.length() == 0) {
-                    errorMessage = this.ctx.getString(R.string.http_request_error_serverresponse_nullcontents);
+                    errorMessage = ErrorString.NULL_CONTENTS;
                     if (response.message().length() != 0) {
                         errorMessage = response.message();
                     }
@@ -589,7 +600,7 @@ public class Request {
                 }
             } else {
                 if (responMessage.length() == 0) {
-                    errorMessage = this.ctx.getString(R.string.http_request_error_serverresponse_nullcontents);
+                    errorMessage = ErrorString.NULL_CONTENTS;
                 }
             }
             if (errorMessage.length() > 0) {

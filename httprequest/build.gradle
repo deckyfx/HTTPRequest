@@ -32,6 +32,9 @@ def gitUrl = 'https://github.com/deckyfx/' + artifactName + '.git' // Git reposi
 android {
     compileSdkVersion 23
     buildToolsVersion "23.0.3"
+    enforceUniquePackageName = false
+    //it was deprecated, but still work
+    android.packageBuildConfig = false
 
     defaultConfig {
         minSdkVersion 14
@@ -82,11 +85,10 @@ dependencies {
     compile 'com.github.franmontiel:PersistentCookieJar:v1.0.0'
     compile 'com.squareup.okhttp3:okhttp:3.2.0'
     compile 'com.squareup.okhttp3:logging-interceptor:3.2.0'
-    compile 'com.github.deckyfx:dbhelper:0.0.1'
+    compile 'com.github.deckyfx:dbhelper:0.0.2'
 }
 
 // Disable this to upload as JAR
-/*
 install {
     repositories.mavenInstaller {
         // This generates POM.xml with proper parameters
@@ -122,7 +124,6 @@ install {
         }
     }
 }
-*/
 
 if (project.hasProperty("android")) { // Android libraries
     task sourcesJar(type: Jar) {
