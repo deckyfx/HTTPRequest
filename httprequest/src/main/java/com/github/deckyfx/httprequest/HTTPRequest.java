@@ -1,6 +1,5 @@
 package com.github.deckyfx.httprequest;
 
-import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.net.ConnectivityManager;
@@ -14,8 +13,6 @@ import com.franmontiel.persistentcookiejar.PersistentCookieJar;
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
 import com.github.deckyfx.httprequest.dao.DaoMaster;
-
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +30,6 @@ import okhttp3.Authenticator;
 import okhttp3.Cache;
 import okhttp3.CacheControl;
 import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.Cookie;
 import okhttp3.Credentials;
 import okhttp3.FormBody;
@@ -56,6 +52,7 @@ public class HTTPRequest {
         public static final String PUT       = "PUT";
         public static final String DELETE    = "DELETE";
     }
+
     public static class ErrorString {
         public static final String NO_ACTIVE_INTERNET           = "No active internet available";
         public static final String REQUEST_ERROR                = "Request Error";
@@ -65,20 +62,21 @@ public class HTTPRequest {
         public static final String ERROR_LOADING_DATA           = "Error loading data";
         public static final String REQUEST_TIMEOUT              = "Request timeout";
         public static final String CANNOT_CONNECT_TO_INTERNET   = "Can not connect to server";
-
     }
 
     public static final String REQUEST_CACHE_DB_NAME            = "httprequest.db";
 
-    private Context mContext;
-    private OkHttpClient mHTTPClient;
-    private String mBaseURL;
-    private ClearableCookieJar mCookieStore;
-    private DBHelper DB;
-    private Cache mRequestCache;
-    private int mConnectTimeOut = 30;
-    private int mWriteTimeOut = 30;
-    private int mReadTimeOut = 30;
+    private Context                 mContext;
+    private OkHttpClient            mHTTPClient;
+    private String                  mBaseURL;
+    private ClearableCookieJar      mCookieStore;
+    private ArrayList<Interceptor>  mApplicationInterceptors    = new ArrayList<Interceptor>(),
+                                    mNetworkInterceptors        = new ArrayList<Interceptor>();
+    protected DBHelper                DB;
+    private Cache                   mRequestCache;
+    private int                     mConnectTimeOut = 30;
+    private int                     mWriteTimeOut = 30;
+    private int                     mReadTimeOut = 30;
 
     public HTTPRequest(Context context){
         this.mContext = context;
@@ -201,32 +199,32 @@ public class HTTPRequest {
         if (requestHandler == null) {
             requestHandler = new RequestHandler() {
                 @Override
-                public void onHTTPRequestStart(Call call) {
+                public void onHTTPRequestStart(RequestCallBack callback) {
 
                 }
 
                 @Override
-                public void onHTTPRequestFinish(Call call) {
+                public void onHTTPRequestFinish(RequestCallBack callback) {
 
                 }
 
                 @Override
-                public void onHTTPRequestSuccess(Call call, Response response, String responseBody) {
+                public void onHTTPRequestSuccess(RequestCallBack callback, Response response, String responseBody) {
 
                 }
 
                 @Override
-                public void onHTTPRequestFailure(Call call, Throwable error) {
+                public void onHTTPRequestFailure(RequestCallBack callback, Throwable error) {
 
                 }
 
                 @Override
-                public void onHTTPRequestRescue(Call call, String recoveredResponse) {
+                public void onHTTPRequestRescue(RequestCallBack callback, String recoveredResponse) {
 
                 }
 
                 @Override
-                public void onHTTPRequestNetworkError(Call call) {
+                public void onHTTPRequestNetworkError(RequestCallBack callback) {
 
                 }
             };
@@ -234,7 +232,7 @@ public class HTTPRequest {
         method = method.toUpperCase(Locale.getDefault());
         RequestBody body = null;
         okhttp3.Request request = null;
-        if (method.equals("GET") || method.equals("DELETE")) {
+        if (method.equals("GET")) {
             url = this.buildURL(url, params);
         } else {
             url = this.buildURL(url, null);
@@ -303,19 +301,19 @@ public class HTTPRequest {
             }
             builder.addHeader(header.getKey(), param_value);
         }
-        request = builder.build();
-
-        Call call = this.mHTTPClient.newCall(request);
+        request                 = builder.build();
+        Call call               = this.mHTTPClient.newCall(request);
+        RequestCallBack cb      = new RequestCallBack(ctx, call, params, headers, requestHandler, this.DB);
         if (requestHandler != null) {
-            this.onStart(ctx, requestHandler, call);
+            cb.onStart();
         }
         if (!this.isNetworkAvailable(ctx)) {
             if (requestHandler != null) {
-                this.onNetworkError(ctx, requestHandler, call);
+                cb.onNetworkError();
             }
             return;
         }
-        call.enqueue(new RequestCallBack(this, ctx, call, requestHandler));
+        call.enqueue(cb);
     }
 
     public Map<String, Object> addBasicAuthToParam(Map<String, Object> params, String login, String password) {
@@ -375,6 +373,16 @@ public class HTTPRequest {
         return result;
     }
 
+    private HashMap<String, Object> parseRequestBodyToHashMap(MultipartBody formbody) {
+        HashMap<String, Object> result = new HashMap<String, Object>();
+        if (formbody != null) {
+            for (int i = 0; i < formbody.parts().size(); i++) {
+                MultipartBody.Part part = formbody.part(i);
+            }
+        }
+        return result;
+    }
+
     public void cancelAllRequest(Context ctx){
         // Should watch this two line bellow! a dangerous method
         // Likely will trigger crash when type for suggestion search
@@ -399,6 +407,35 @@ public class HTTPRequest {
         this.mConnectTimeOut = timeOut;
         this.mWriteTimeOut = timeOut;
         this.mReadTimeOut = timeOut;
+    }
+
+    public void addApplicationInterceptor(Interceptor interceptor) {
+        this.mApplicationInterceptors.add(interceptor);
+    }
+
+    public ArrayList<Interceptor> getApplicationInterceptors() {
+        return this.mApplicationInterceptors;
+    }
+
+    public void removeApplicationInterceptors(int index) {
+        this.mApplicationInterceptors.remove(index);
+    }
+
+    public void addNetworkInterceptor(Interceptor interceptor) {
+        this.mNetworkInterceptors.add(interceptor);
+    }
+
+    public ArrayList<Interceptor> getNetworkInterceptors() {
+        return this.mNetworkInterceptors;
+    }
+
+    public void removeNetworkInterceptors(int index) {
+        this.mNetworkInterceptors.remove(index);
+    }
+
+    public void removeAllInterceptors() {
+        this.mApplicationInterceptors.removeAll(this.mApplicationInterceptors);
+        this.mNetworkInterceptors.removeAll(this.mNetworkInterceptors);
     }
 
     public OkHttpClient createHTTPClient(int timeout, ClearableCookieJar cookieJar, Cache cache,
@@ -441,8 +478,12 @@ public class HTTPRequest {
 
     public void initHTTPCLient(){
         this.mHTTPClient = this.createHTTPClient(this.mConnectTimeOut, this.mCookieStore,
-                this.mRequestCache, new ArrayList<Interceptor>(), new ArrayList<Interceptor>(),
+                this.mRequestCache, this.mApplicationInterceptors, this.mNetworkInterceptors,
                 null);
+    }
+
+    public boolean isInitialized() {
+        return (this.mHTTPClient != null);
     }
 
     public void clearCache() {
@@ -454,180 +495,8 @@ public class HTTPRequest {
         this.mCookieStore.clear();
     }
 
-    private void onStart(Context ctx, final RequestHandler requestHandler, final Call call) {
-        if (ctx instanceof Activity) {
-            ((Activity) ctx).runOnUiThread(new Runnable() {
-                public void run() {
-                    requestHandler.onHTTPRequestStart(call);
-                }
-            });
-        } else {
-            requestHandler.onHTTPRequestStart(call);
-        }
-    }
-
-    private void onFinish(Context ctx, final RequestHandler requestHandler, final Call call) {
-        if (ctx instanceof Activity) {
-            ((Activity) ctx).runOnUiThread(new Runnable() {
-                public void run() {
-                    requestHandler.onHTTPRequestFinish(call);
-                }
-            });
-        } else {
-            requestHandler.onHTTPRequestFinish(call);
-        }
-    }
-
-    private void onSuccess(Context ctx, final RequestHandler requestHandler, final Call call, final Response response, final String responMessage) {
-        if (ctx instanceof Activity) {
-            ((Activity) ctx).runOnUiThread(new Runnable() {
-                public void run() {
-                    requestHandler.onHTTPRequestSuccess(call, response, responMessage);
-                }
-            });
-        } else {
-            requestHandler.onHTTPRequestSuccess(call, response, responMessage);
-        }
-    }
-
-    private void onFail(Context ctx, final RequestHandler requestHandler, final Call call, final Throwable error) {
-        if (ctx instanceof Activity) {
-            ((Activity) ctx).runOnUiThread(new Runnable() {
-                public void run() {
-                    requestHandler.onHTTPRequestFailure(call, error);
-                }
-            });
-        } else {
-            requestHandler.onHTTPRequestFailure(call, error);
-        }
-    }
-
-    private void onRescue(Context ctx, final RequestHandler requestHandler, final Call call, final String recoveredResponse) {
-        if (ctx instanceof Activity) {
-            ((Activity) ctx).runOnUiThread(new Runnable() {
-                public void run() {
-                    requestHandler.onHTTPRequestRescue(call, recoveredResponse);
-                }
-            });
-        } else {
-            requestHandler.onHTTPRequestRescue(call, recoveredResponse);
-        }
-    }
-
-    private void onNetworkError(Context ctx, final RequestHandler requestHandler, final Call call) {
-        if (ctx instanceof Activity) {
-            ((Activity) ctx).runOnUiThread(new Runnable() {
-                public void run() {
-                    requestHandler.onHTTPRequestNetworkError(call);
-                }
-            });
-        }
-    }
-
-    public static class RequestCallBack implements Callback{
-        private DBHelper db;
-        private Context ctx;
-        private RequestHandler requestHandler;
-        private HTTPRequest request;
-        private Call mCall;
-
-        public RequestCallBack(HTTPRequest request, Context ctx, Call call, RequestHandler requestHandler) {
-            this.ctx = ctx;
-            this.request = request;
-            this.db = request.DB;
-            this.mCall = call;
-            this.requestHandler = requestHandler;
-        }
-
-        @Override
-        public void onFailure(Call call, IOException e) {
-            String errorMessage = e.getMessage();
-            if (e != null) {
-                if (errorMessage.equals(ErrorString.REQUEST_FAILED)) {
-                    // Skip general error content if there is previous error
-                    return;
-                } else if (errorMessage.equals(ErrorString.NULL_CONTENTS)) {
-                    // Skip null contents error content if there is previous error
-                    return;
-                } else if (e instanceof java.net.SocketTimeoutException) {
-                    errorMessage = ErrorString.REQUEST_TIMEOUT;
-                } else {
-
-                }
-            }
-            HashMap<String, Object>params = this.request.parseRequestBodyToHashMap((FormBody) call.request().body());
-            JSONObject json_param = new JSONObject(params);
-            String url = call.request().url().toString();
-            String responseMessage = "";
-
-            this.request.onFinish(ctx, this.requestHandler, call);
-            this.request.onFail(ctx, this.requestHandler, call, new Exception(errorMessage));
-            if (this.db != null) {
-                responseMessage = this.db.loadResponseFromCache(url, call.request().method(), json_param.toString());
-            }
-            if (responseMessage.length() > 0) {
-                this.request.onRescue(ctx, this.requestHandler, call, responseMessage);
-            }
-        }
-
-        @Override
-        public void onResponse(Call call, Response response) throws IOException {
-            byte[] response_bytes = new byte[0];
-            try {
-                response_bytes = response.body().bytes();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            int request_code = response.code();
-            String url = call.request().url().toString();
-            String message = response.message();
-            HashMap<String, Object>params = this.request.parseRequestBodyToHashMap((FormBody) call.request().body());
-            JSONObject json_param = new JSONObject(params);
-
-            String errorMessage = "";
-            String responMessage = "";
-            if (response_bytes != null) {
-                responMessage = new String(response_bytes);
-            }
-            if ((request_code != 200 && request_code != 230)) {
-                if (responMessage.length() == 0) {
-                    errorMessage = ErrorString.NULL_CONTENTS;
-                    if (response.message().length() != 0) {
-                        errorMessage = response.message();
-                    }
-                } else {
-                    errorMessage = responMessage;
-                }
-            } else {
-                if (responMessage.length() == 0) {
-                    errorMessage = ErrorString.NULL_CONTENTS;
-                }
-            }
-            if (errorMessage.length() > 0) {
-                this.request.onFinish(ctx, this.requestHandler, call);
-                this.request.onFail(ctx, this.requestHandler, call,  new Exception(errorMessage));
-                if (this.db != null) {
-                    responMessage = this.db.loadResponseFromCache(url, call.request().method(), json_param.toString());
-                }
-                if (responMessage.length() > 0) {
-                    this.request.onRescue(ctx, this.requestHandler, call, responMessage);
-                }
-            } else {
-                this.request.onFinish(ctx, this.requestHandler, call);
-                if (this.db != null) {
-                    this.db.saveResponseToCache(url, call.request().method(), json_param.toString(), responMessage);
-                }
-                this.request.onSuccess(ctx, this.requestHandler, call, response, responMessage);
-            }
-        }
-    }
-
-    public interface RequestHandler {
-        void onHTTPRequestStart(Call call);
-        void onHTTPRequestFinish(Call call);
-        void onHTTPRequestSuccess(Call call, Response response, String responseBody);
-        void onHTTPRequestFailure(Call call, Throwable error);
-        void onHTTPRequestRescue(Call call, String recoveredResponse);
-        void onHTTPRequestNetworkError(Call call);
+    public static class ParamHeader {
+        public String name      = "";
+        public Object value     = "";
     }
 }
