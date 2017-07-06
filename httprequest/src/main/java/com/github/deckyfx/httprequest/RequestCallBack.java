@@ -92,8 +92,10 @@ public class RequestCallBack implements Callback {
         if ((request_code != 200 && request_code != 230)) {
             if (responMessage.length() == 0) {
                 errorMessage = HTTPRequest.ErrorString.NULL_CONTENTS;
-                if (response.message().length() != 0) {
-                    errorMessage = response.message();
+                if (response.message() != null) {
+                    if (response.message().length() != 0) {
+                        errorMessage = response.message();
+                    }
                 }
             } else {
                 errorMessage = responMessage;
