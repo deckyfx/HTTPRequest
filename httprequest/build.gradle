@@ -6,7 +6,7 @@ group = 'com.github.deckyfx'
 version = versionName
 
 def groupName = group
-def artifactName = 'simpleadapter'
+def artifactName = 'httprequest'
 
 android {
     compileSdkVersion 24
