@@ -280,14 +280,16 @@ public class HTTPRequest {
                 }
                 body = bodyBuilder.build();
             }
-            headers.put("Content-Type", body.contentType().toString());
             long contentLength = 0;
             try {
                 contentLength = body.contentLength();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            headers.put("Content-Length",  Long.toString(contentLength));
+            if (headers.get("Content-Type") == null) {
+                headers.put("Content-Type", body.contentType().toString());
+                headers.put("Content-Length",  Long.toString(contentLength));
+            }
         }
         okhttp3.Request.Builder builder = new okhttp3.Request.Builder()
                 .url(url)
