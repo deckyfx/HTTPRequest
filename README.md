@@ -24,7 +24,7 @@ Add the dependency
 dependencies {
     compile 'com.google.code.gson:gson:2.8.1'
     compile 'org.greenrobot:greendao:3.2.0'
-    compile 'com.github.deckyfx:simpleadapter:0.22@aar'
+    compile 'com.github.deckyfx:simpleadapter:-SNAPSHOT@aar'
     compile 'com.github.deckyfx:dbhelper:0.5'
     compile 'com.github.deckyfx:httprequest:0.18'
 }

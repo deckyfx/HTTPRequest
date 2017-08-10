@@ -1,1 +1,1 @@
-include ':app', ':httprequest'
+include ':app'
