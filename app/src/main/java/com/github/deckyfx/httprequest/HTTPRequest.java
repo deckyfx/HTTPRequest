@@ -129,6 +129,10 @@ public class HTTPRequest {
         this.mBaseURL = url;
     }
 
+    public String getBaseURL(){
+        return this.mBaseURL;
+    }
+
     public OkHttpClient getHTTPCLient(){
         return this.mHTTPClient;
     }
