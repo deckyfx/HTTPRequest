@@ -44,8 +44,10 @@ android {
 //ext.INCREASE_VERSION_CODE_WHEN_RUN_TASK = ""
 //apply from: 'https://raw.githubusercontent.com/deckyfx/AndroidTemplate/master/automatic-versioning.gradle'
 
-// Automatic sqlite management
-apply from: 'https://raw.githubusercontent.com/deckyfx/gdgen/master/gdgen.gradle'
+// Automatic sqlite management - Using old version from bintray
+// apply from: 'https://raw.githubusercontent.com/deckyfx/gdgen/master/gdgen.gradle'
+// Automatic sqlite management - Using new version from jitpack
+apply from: 'https://raw.githubusercontent.com/deckyfx/gdgen/master/gdgen-new.gradle'
 
 configurations {
     doc {
@@ -59,11 +61,9 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
 
-    compile 'com.github.franmontiel:PersistentCookieJar:v1.0.0'
-    compile 'com.squareup.okhttp3:okhttp:3.2.0'
-    compile 'com.squareup.okhttp3:logging-interceptor:3.2.0'
-    compile 'org.greenrobot:greendao:3.2.0'
-    compile 'com.github.deckyfx:dbhelper:-SNAPSHOT'
+    compileOnly 'com.github.franmontiel:PersistentCookieJar:v1.0.0'
+    compileOnly 'com.squareup.okhttp3:okhttp:3.2.0'
+    compileOnly 'com.github.deckyfx:dbhelper:-SNAPSHOT'
 
     testCompile 'junit:junit:4.12'
 }

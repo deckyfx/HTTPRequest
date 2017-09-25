@@ -22,11 +22,7 @@ Add the dependency
 
 ```gradle
 dependencies {
-    compile 'com.google.code.gson:gson:2.8.1'
-    compile 'org.greenrobot:greendao:3.2.0'
-    compile 'com.github.deckyfx:simpleadapter:-SNAPSHOT@aar'
-    compile 'com.github.deckyfx:dbhelper:0.5'
-    compile 'com.github.deckyfx:httprequest:0.18'
+    compile 'com.github.deckyfx:httprequest:-SNAPSHOT@aar'
 }
 ```
 

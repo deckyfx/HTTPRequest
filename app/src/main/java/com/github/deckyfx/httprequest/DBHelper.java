@@ -4,8 +4,8 @@ import android.content.Context;
 
 import com.github.deckyfx.httprequest.dao.RequestCache;
 
-import org.greenrobot.greendao.AbstractDaoMaster;
-import org.greenrobot.greendao.Property;
+import com.github.deckyfx.greendao.AbstractDaoMaster;
+import com.github.deckyfx.greendao.Property;
 
 import java.util.Date;
 import java.util.List;
