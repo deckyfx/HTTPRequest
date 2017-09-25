@@ -11,7 +11,6 @@ import java.util.Map;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Request;
-import okhttp3.Response;
 
 /**
  * Created by decky on 2/2/17.
@@ -72,7 +71,7 @@ public class RequestCallBack implements Callback {
     }
 
     @Override
-    public void onResponse(Call call, Response response) throws IOException {
+    public void onResponse(Call call, okhttp3.Response response) throws IOException {
         this.mCall = call;
         byte[] response_bytes = new byte[0];
         try {
@@ -148,15 +147,15 @@ public class RequestCallBack implements Callback {
         }
     }
 
-    protected void onSuccess(final Response response, final String responMessage) {
+    protected void onSuccess(final okhttp3.Response response, final String responMessage) {
         if (this.ctx instanceof Activity) {
             ((Activity) this.ctx).runOnUiThread(new Runnable() {
                 public void run() {
-                    requestHandler.onHTTPRequestSuccess(me, response, responMessage);
+                    requestHandler.onHTTPRequestSuccess(me, new Response(response), responMessage);
                 }
             });
         } else {
-            requestHandler.onHTTPRequestSuccess(me, response, responMessage);
+            requestHandler.onHTTPRequestSuccess(me, new Response(response), responMessage);
         }
     }
 

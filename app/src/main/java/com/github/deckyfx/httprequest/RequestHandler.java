@@ -1,7 +1,5 @@
 package com.github.deckyfx.httprequest;
 
-import okhttp3.Response;
-
 /**
  * Created by decky on 2/2/17.
  */
