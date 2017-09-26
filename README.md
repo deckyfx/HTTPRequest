@@ -22,7 +22,8 @@ Add the dependency
 
 ```gradle
 dependencies {
-    compile 'com.github.deckyfx:httprequest:-SNAPSHOT@aar'
+    compile 'com.squareup.okhttp3:okhttp:3.9.0'
+    compile 'com.github.deckyfx:dbhelper:-SNAPSHOT'
 }
 ```
 
@@ -36,6 +37,7 @@ HTTPRequest HTTP_CLIENT = new HTTPRequest(App.MAIN_CONTEXT);
 HTTP_CLIENT.setRequestTimeOut(15);
 HTTP_CLIENT.initRequestCache();
 HTTP_CLIENT.initCookieStore();
+HTTP_CLIENT.setLogLevel(/* HttpLoggingInterceptor.Level */);
 HTTP_CLIENT.setBaseURL(/* your REST API home url */);
 HTTP_CLIENT.addApplicationInterceptor(/* Interceptor goes here */);
 HTTP_CLIENT.initHTTPCLient();

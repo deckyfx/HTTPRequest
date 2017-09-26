@@ -8,11 +8,12 @@ import android.net.Uri;
 import android.util.Patterns;
 import android.webkit.MimeTypeMap;
 
-import com.franmontiel.persistentcookiejar.ClearableCookieJar;
-import com.franmontiel.persistentcookiejar.PersistentCookieJar;
-import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
-import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
 import com.github.deckyfx.httprequest.dao.DaoMaster;
+import com.github.deckyfx.logging.HttpLoggingInterceptor;
+import com.github.deckyfx.persistentcookiejar.ClearableCookieJar;
+import com.github.deckyfx.persistentcookiejar.PersistentCookieJar;
+import com.github.deckyfx.persistentcookiejar.cache.SetCookieCache;
+import com.github.deckyfx.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,12 +40,12 @@ import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
-import okhttp3.logging.HttpLoggingInterceptor;
 
 /**
  * Created by decky on 9/8/16.
  */
 public class HTTPRequest {
+
     public static class Method {
         public static final String GET       = "GET";
         public static final String POST      = "POST";
@@ -71,16 +72,18 @@ public class HTTPRequest {
     private ClearableCookieJar      mCookieStore;
     private ArrayList<Interceptor>  mApplicationInterceptors    = new ArrayList<Interceptor>(),
                                     mNetworkInterceptors        = new ArrayList<Interceptor>();
-    protected DBHelper                DB;
+    protected DBHelper              DB;
     private Cache                   mRequestCache;
     private int                     mConnectTimeOut = 30;
     private int                     mWriteTimeOut = 30;
     private int                     mReadTimeOut = 30;
+    private HttpLoggingInterceptor  mLogInterceptor             = new HttpLoggingInterceptor();;
 
     public HTTPRequest(Context context){
         this.mContext = context;
         this.setBaseURL("");
         this.DB = new DBHelper(this.mContext, DaoMaster.class, REQUEST_CACHE_DB_NAME);
+        this.mLogInterceptor.setLevel(HttpLoggingInterceptor.Level.NONE);
     }
 
     public HashMap<String, Cookie> getCookies(){
@@ -446,8 +449,6 @@ public class HTTPRequest {
     public OkHttpClient createHTTPClient(int timeout, ClearableCookieJar cookieJar, Cache cache,
                                          ArrayList<Interceptor> interceptors, ArrayList<Interceptor> networkInterceptor,
                                          Authenticator authenticator) {
-        HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
-        logging.setLevel(HttpLoggingInterceptor.Level.BASIC);
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
         if (cookieJar != null) {
             builder = builder.cookieJar(cookieJar);
@@ -460,7 +461,7 @@ public class HTTPRequest {
         if (cache != null) {
             builder = builder.cache(new Cache(new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString()), 10 * 1024 * 1024));  // 10 MiB
         }
-        builder = builder.addInterceptor(logging);
+        builder = builder.addInterceptor(this.mLogInterceptor);
         if (interceptors != null) {
             for (int i = 0; i < interceptors.size(); i++) {
                 if (interceptors.get(i) != null) {
@@ -498,6 +499,14 @@ public class HTTPRequest {
             e.printStackTrace();
         }
         this.mCookieStore.clear();
+    }
+
+    public void setLogLevel(HttpLoggingInterceptor.Level level) {
+        this.mLogInterceptor.setLevel(level);
+    }
+
+    public void clearRequestCache() {
+        this.DB.FlushAll();
     }
 
     public static class ParamHeader {
