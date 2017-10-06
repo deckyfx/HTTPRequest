@@ -21,7 +21,6 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
     }
     buildTypes {
         release {
@@ -61,8 +60,13 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
 
-    compileOnly 'com.squareup.okhttp3:okhttp:3.9.0'
-    compileOnly 'com.github.deckyfx:dbhelper:-SNAPSHOT'
+    compile 'com.squareup.okhttp3:okhttp:3.9.0'
+    compile 'com.github.deckyfx:dbhelper:-SNAPSHOT'
+
+    //compile 'com.google.code.gson:gson:2.8.0'
+    //compile 'nl.qbusict:cupboard:2.2.0'
+    //compile "com.android.support:design:24.0.0-beta1"
+    //compile 'com.android.support:appcompat-v7:24.0.0-beta1'
 
     testCompile 'junit:junit:4.12'
 }

@@ -74,9 +74,9 @@ public class HTTPRequest {
                                     mNetworkInterceptors        = new ArrayList<Interceptor>();
     protected DBHelper              DB;
     private Cache                   mRequestCache;
-    private int                     mConnectTimeOut = 30;
-    private int                     mWriteTimeOut = 30;
-    private int                     mReadTimeOut = 30;
+    private int                     mConnectTimeOut             = 30;
+    private int                     mWriteTimeOut               = 30;
+    private int                     mReadTimeOut                = 30;
     private HttpLoggingInterceptor  mLogInterceptor             = new HttpLoggingInterceptor();;
 
     public HTTPRequest(Context context){
@@ -105,28 +105,6 @@ public class HTTPRequest {
         return result;
     }
 
-    public String getAbsoluteUrl(String path) {
-        if (path.contains("http://") || path.contains("https://")) {
-            return path;
-        } else {
-            String pathFirstChar = "";
-            String baseLastChar = "";
-            if (path.length() > 0) {
-                pathFirstChar = path.substring(0, 1);
-            }
-            if (this.mBaseURL.length() > 0) {
-                baseLastChar = this.mBaseURL.substring(this.mBaseURL.length() - 1);
-            }
-            String prefix = "";
-            if (!baseLastChar.equals("/") && !pathFirstChar.equals("/")) {
-                prefix = "/";
-            } else if (baseLastChar.equals("/") && pathFirstChar.equals("/")) {
-                path = path.substring(path.indexOf("/"));
-            }
-            return this.mBaseURL + prefix + path;
-        }
-    }
-
     public void setBaseURL(String url){
         this.mBaseURL = url;
     }
@@ -148,161 +126,19 @@ public class HTTPRequest {
         return (localNetworkInfo != null) && (localNetworkInfo.isConnected());
     }
 
-    public void send(Context ctx, String url) {
-        this.send(ctx, url, null, null, null, 0, null);
-    }
+    public void send(RequestCall rcall) {
+        rcall.setBaseUrl(this.mBaseURL);
 
-    public void send(Context ctx, String url, RequestHandler requestHandler) {
-        this.send(ctx, url, null, null, null, 0, requestHandler);
-    }
-
-    public void send(Context ctx, String url, int requestId, RequestHandler requestHandler) {
-        this.send(ctx, url, null, null, null, requestId, requestHandler);
-    }
-
-    public void send(Context ctx, String url, String method) {
-        this.send(ctx, url, method, null, null, 0, null);
-    }
-
-    public void send(Context ctx, String url, String method, RequestHandler requestHandler) {
-        this.send(ctx, url, method, null, null, 0, requestHandler);
-    }
-
-    public void send(Context ctx, String url, String method, int requestId, RequestHandler requestHandler) {
-        this.send(ctx, url, method, null, null, requestId, requestHandler);
-    }
-
-    public void send(Context ctx, String url, String method, Map<String, Object> params) {
-        this.send(ctx, url, method, params, null, 0, null);
-    }
-
-    public void send(Context ctx, String url, String method,  Map<String, Object> params, RequestHandler requestHandler) {
-        this.send(ctx, url, method, params, null, 0, requestHandler);
-    }
-
-    public void send(Context ctx, String url, String method,  Map<String, Object> params, int requestId, RequestHandler requestHandler) {
-        this.send(ctx, url, method, params, null, requestId, requestHandler);
-    }
-
-    public void send(Context ctx, String url, String method, Map<String, Object> params, Map<String, Object> headers) {
-        this.send(ctx, url, method, params, headers, 0, null);
-    }
-
-    public void send(Context ctx, String url, String method, Map<String, Object> params, Map<String, Object> headers, RequestHandler requestHandler) {
-        this.send(ctx, url, method, params, headers, 0, requestHandler);
-    }
-
-    public void send(Context ctx, String url, String method, Map<String, Object> params, Map<String, Object> headers, int requestId, RequestHandler requestHandler) {
-        if (method == null) {
-            method = HTTPRequest.Method.GET;
-        }
-        if (params == null) {
-            params = new HashMap<String, Object>();
-        }
-        if (headers == null) {
-            headers = new HashMap<String, Object>();
-        }
-        if (requestHandler == null) {
-            requestHandler = new RequestHandler() {
-                @Override
-                public void onHTTPRequestStart(RequestCallBack callback) {
-
-                }
-
-                @Override
-                public void onHTTPRequestFinish(RequestCallBack callback) {
-
-                }
-
-                @Override
-                public void onHTTPRequestSuccess(RequestCallBack callback, Response response, String responseBody) {
-
-                }
-
-                @Override
-                public void onHTTPRequestFailure(RequestCallBack callback, Throwable error) {
-
-                }
-
-                @Override
-                public void onHTTPRequestRescue(RequestCallBack callback, String recoveredResponse) {
-
-                }
-
-                @Override
-                public void onHTTPRequestNetworkError(RequestCallBack callback) {
-
-                }
-            };
-        }
-        method = method.toUpperCase(Locale.getDefault());
-        RequestBody body = null;
-        okhttp3.Request request = null;
-        if (method.equals("GET")) {
-            url = this.buildURL(url, params);
-        } else {
-            url = this.buildURL(url, null);
-            boolean containFile = false;
-            for (Map.Entry<String, Object> param : params.entrySet()) {
-                if (param.getValue() instanceof File) {
-                    containFile = true;
-                    break;
-                }
-            }
-
-            if (containFile) {
-                MultipartBody.Builder bodyBuilder = new MultipartBody.Builder();
-                bodyBuilder.setType(MultipartBody.FORM);
-                for (Map.Entry<String, Object> param : params.entrySet()) {
-                    if (param.getValue() instanceof File) {
-                        File f = (File) param.getValue();
-                        String mimeType = null;
-                        Uri uri = Uri.fromFile(f);
-                        if (uri.getScheme().equals(ContentResolver.SCHEME_CONTENT)) {
-                            ContentResolver cR = this.mContext.getContentResolver();
-                            mimeType = cR.getType(uri);
-                        } else {
-                            String extension = MimeTypeMap.getFileExtensionFromUrl(f.getAbsolutePath());
-                            mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension.toLowerCase());
-                        }
-                        bodyBuilder.addFormDataPart(param.getKey(), f.getName(), RequestBody.create(MediaType.parse(mimeType), f));
-                    } else {
-                        String param_value = "";
-                        if (param.getValue() != null) {
-                            param_value = param.getValue().toString();
-                        }
-                        bodyBuilder.addFormDataPart(param.getKey(), param_value);
-                    }
-                    body = bodyBuilder.build();
-                }
-            } else {
-                FormBody.Builder bodyBuilder = new FormBody.Builder();
-                for (Map.Entry<String, Object> param : params.entrySet()) {
-                    String param_value = "";
-                    if (param.getValue() != null) {
-                        param_value = param.getValue().toString();
-                    }
-                    bodyBuilder.add(param.getKey(), param_value);
-                }
-                body = bodyBuilder.build();
-            }
-            long contentLength = 0;
-            try {
-                contentLength = body.contentLength();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if (headers.get("Content-Type") == null) {
-                headers.put("Content-Type", body.contentType().toString());
-                headers.put("Content-Length",  Long.toString(contentLength));
-            }
+        okhttp3.Request request     = null;
+        if (!rcall.hasContentTypeHeader()) {
+            rcall.addContentTypeHeader().addContentLengthHeader();
         }
         okhttp3.Request.Builder builder = new okhttp3.Request.Builder()
-                .url(url)
+                .url(rcall.getUrl())
                 .cacheControl(new CacheControl.Builder().noCache().build())
-                .tag(requestId)
-                .method(method, body);
-        for (Map.Entry<String, Object> header : headers.entrySet()) {
+                .tag(rcall.getRequestId())
+                .method(rcall.getMethod(), rcall.getBody());
+        for (Map.Entry<String, Object> header : rcall.getHeaders().entrySet()) {
             String param_value = "";
             if (header.getValue() != null) {
                 param_value = header.getValue().toString();
@@ -311,84 +147,14 @@ public class HTTPRequest {
         }
         request                 = builder.build();
         Call call               = this.mHTTPClient.newCall(request);
-        RequestCallBack cb      = new RequestCallBack(ctx, call, params, headers, requestHandler, this.DB);
-        if (requestHandler != null) {
-            cb.onStart();
-        }
-        if (!this.isNetworkAvailable(ctx)) {
-            if (requestHandler != null) {
-                cb.onNetworkError();
-            }
+        rcall.setCall(call);
+        rcall.setDBHelper(this.DB);
+        rcall.onStart();
+        if (!this.isNetworkAvailable(rcall.getContext())) {
+            rcall.onNetworkError();
             return;
         }
-        call.enqueue(cb);
-    }
-
-    public Map<String, Object> addBasicAuthToParam(Map<String, Object> params, String login, String password) {
-        if (params == null) {
-            params = new HashMap<String, Object>();
-        }
-        params.put("Authorization", Credentials.basic(login, password));
-        return params;
-    }
-
-    public Map<String, Object> addAuthToParam(Map<String, Object> params, String auth, String token) {
-        if (params == null) {
-            params = new HashMap<String, Object>();
-        }
-        params.put("Authorization", auth + " " + token);
-        return params;
-    }
-
-    public String buildURL(String url, Map<String, Object> params) {
-        if (params == null) {
-            params = new HashMap<String, Object>();
-        }
-        if (!Patterns.WEB_URL.matcher(url).matches()) {
-            url = this.getAbsoluteUrl(url);
-        }
-        if (url.length() == 0) {
-            return "";
-        }
-        HttpUrl parsed_url = HttpUrl.parse(url);
-        HttpUrl.Builder urlBuilder;
-        if (parsed_url != null) {
-            urlBuilder = parsed_url.newBuilder();
-        } else {
-            urlBuilder = new HttpUrl.Builder();
-        }
-        for (Map.Entry<String, Object> param : params.entrySet()) {
-            String param_value = "";
-            if (param.getValue() != null) {
-                param_value = param.getValue().toString();
-            }
-            urlBuilder.addQueryParameter(param.getKey(), param_value);
-        }
-        if (parsed_url != null) {
-            return urlBuilder.build().toString();
-        } else {
-            return url;
-        }
-    }
-
-    private HashMap<String, Object> parseRequestBodyToHashMap(FormBody formbody) {
-        HashMap<String, Object> result = new HashMap<String, Object>();
-        if (formbody != null) {
-            for (int i = 0; i < formbody.size(); i++) {
-                result.put(formbody.name(i), formbody.value(i));
-            }
-        }
-        return result;
-    }
-
-    private HashMap<String, Object> parseRequestBodyToHashMap(MultipartBody formbody) {
-        HashMap<String, Object> result = new HashMap<String, Object>();
-        if (formbody != null) {
-            for (int i = 0; i < formbody.parts().size(); i++) {
-                MultipartBody.Part part = formbody.part(i);
-            }
-        }
-        return result;
+        call.enqueue(rcall);
     }
 
     public void cancelAllRequest(Context ctx){
