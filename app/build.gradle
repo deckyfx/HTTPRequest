@@ -9,14 +9,14 @@ def groupName = group
 def artifactName = 'httprequest'
 
 android {
-    compileSdkVersion 24
+    compileSdkVersion 26
     buildToolsVersion '25.0.0'
     enforceUniquePackageName = false
     android.packageBuildConfig = false
 
     defaultConfig {
-        minSdkVersion 14
-        targetSdkVersion 23
+        minSdkVersion 16
+        targetSdkVersion 26
         versionCode 1
         versionName "1.0"
 
@@ -60,13 +60,16 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
 
-    compile 'com.squareup.okhttp3:okhttp:3.9.0'
+    compile group: 'javax.annotation', name: 'javax.annotation-api', version: '1.3.1'
+    compile group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
+    compile group: 'com.squareup.okio', name: 'okio', version: '1.13.0'
     compile 'com.github.deckyfx:dbhelper:-SNAPSHOT'
 
-    //compile 'com.google.code.gson:gson:2.8.0'
-    //compile 'nl.qbusict:cupboard:2.2.0'
-    //compile "com.android.support:design:24.0.0-beta1"
-    //compile 'com.android.support:appcompat-v7:24.0.0-beta1'
+    compile 'com.google.code.gson:gson:2.8.0'
+    compile 'nl.qbusict:cupboard:2.2.0'
+    compile "com.android.support:design:25.3.1"
+    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile "com.android.support:support-v4:+"
 
     testCompile 'junit:junit:4.12'
 }

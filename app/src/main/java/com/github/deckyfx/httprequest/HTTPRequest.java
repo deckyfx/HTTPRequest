@@ -1,15 +1,19 @@
 package com.github.deckyfx.httprequest;
 
-import android.content.ContentResolver;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
-import android.util.Patterns;
-import android.webkit.MimeTypeMap;
 
 import com.github.deckyfx.httprequest.dao.DaoMaster;
 import com.github.deckyfx.logging.HttpLoggingInterceptor;
+import com.github.deckyfx.logging.chuck.ChuckInterceptor;
+import com.github.deckyfx.okhttp3.Authenticator;
+import com.github.deckyfx.okhttp3.Cache;
+import com.github.deckyfx.okhttp3.Call;
+import com.github.deckyfx.okhttp3.Cookie;
+import com.github.deckyfx.okhttp3.HttpUrl;
+import com.github.deckyfx.okhttp3.Interceptor;
+import com.github.deckyfx.okhttp3.OkHttpClient;
 import com.github.deckyfx.persistentcookiejar.ClearableCookieJar;
 import com.github.deckyfx.persistentcookiejar.PersistentCookieJar;
 import com.github.deckyfx.persistentcookiejar.cache.SetCookieCache;
@@ -22,48 +26,16 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import okhttp3.Authenticator;
-import okhttp3.Cache;
-import okhttp3.CacheControl;
-import okhttp3.Call;
-import okhttp3.Cookie;
-import okhttp3.Credentials;
-import okhttp3.FormBody;
-import okhttp3.HttpUrl;
-import okhttp3.Interceptor;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.RequestBody;
+
 
 /**
  * Created by decky on 9/8/16.
  */
 public class HTTPRequest {
-
-    public static class Method {
-        public static final String GET       = "GET";
-        public static final String POST      = "POST";
-        public static final String PUT       = "PUT";
-        public static final String DELETE    = "DELETE";
-    }
-
-    public static class ErrorString {
-        public static final String NO_ACTIVE_INTERNET           = "No active internet available";
-        public static final String REQUEST_ERROR                = "Request Error";
-        public static final String FAILED_RESPONSE              = "Server return failed response";
-        public static final String NULL_CONTENTS                = "Server return null contents";
-        public static final String REQUEST_FAILED               = "Request failed";
-        public static final String ERROR_LOADING_DATA           = "Error loading data";
-        public static final String REQUEST_TIMEOUT              = "Request timeout";
-        public static final String CANNOT_CONNECT_TO_INTERNET   = "Can not connect to server";
-    }
-
     public static final String REQUEST_CACHE_DB_NAME            = "httprequest.db";
 
     private Context                 mContext;
@@ -77,13 +49,13 @@ public class HTTPRequest {
     private int                     mConnectTimeOut             = 30;
     private int                     mWriteTimeOut               = 30;
     private int                     mReadTimeOut                = 30;
-    private HttpLoggingInterceptor  mLogInterceptor             = new HttpLoggingInterceptor();;
+    private HttpLoggingInterceptor  mLogInterceptor;
+    private ChuckInterceptor        mChuckInterceptor;
 
     public HTTPRequest(Context context){
         this.mContext = context;
         this.setBaseURL("");
         this.DB = new DBHelper(this.mContext, DaoMaster.class, REQUEST_CACHE_DB_NAME);
-        this.mLogInterceptor.setLevel(HttpLoggingInterceptor.Level.NONE);
     }
 
     public HashMap<String, Cookie> getCookies(){
@@ -121,52 +93,19 @@ public class HTTPRequest {
         return this.mHTTPClient.newBuilder().build();
     }
 
-    public boolean isNetworkAvailable(Context ctx) {
-        NetworkInfo localNetworkInfo = ((ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
-        return (localNetworkInfo != null) && (localNetworkInfo.isConnected());
+    public void enableHTTPLogging(){
+        this.mLogInterceptor = new HttpLoggingInterceptor();
+        this.mLogInterceptor.setLevel(HttpLoggingInterceptor.Level.BASIC);
     }
 
-    public void send(RequestCall rcall) {
-        rcall.setBaseUrl(this.mBaseURL);
-
-        okhttp3.Request request     = null;
-        if (!rcall.hasContentTypeHeader()) {
-            rcall.addContentTypeHeader().addContentLengthHeader();
-        }
-        okhttp3.Request.Builder builder = new okhttp3.Request.Builder()
-                .url(rcall.getUrl())
-                .cacheControl(new CacheControl.Builder().noCache().build())
-                .tag(rcall.getRequestId())
-                .method(rcall.getMethod(), rcall.getBody());
-        for (Map.Entry<String, Object> header : rcall.getHeaders().entrySet()) {
-            String param_value = "";
-            if (header.getValue() != null) {
-                param_value = header.getValue().toString();
-            }
-            builder.addHeader(header.getKey(), param_value);
-        }
-        request                 = builder.build();
-        Call call               = this.mHTTPClient.newCall(request);
-        rcall.setCall(call);
-        rcall.setDBHelper(this.DB);
-        rcall.onStart();
-        if (!this.isNetworkAvailable(rcall.getContext())) {
-            rcall.onNetworkError();
-            return;
-        }
-        call.enqueue(rcall);
+    public void enableHTTPLogging(HttpLoggingInterceptor.Level level){
+        this.mLogInterceptor = new HttpLoggingInterceptor();
+        this.mLogInterceptor.setLevel(level);
     }
 
-    public void cancelAllRequest(Context ctx){
-        // Should watch this two line bellow! a dangerous method
-        // Likely will trigger crash when type for suggestion search
-        this.mHTTPClient.dispatcher().cancelAll();
-        for (Call call : this.mHTTPClient.dispatcher().queuedCalls()) {
-            call.cancel();
-        }
-        for (Call call : this.mHTTPClient.dispatcher().runningCalls()) {
-            call.cancel();
-        }
+    public void enableChuckLogging(boolean notification){
+        this.mChuckInterceptor = new ChuckInterceptor(this.mContext);
+        this.mChuckInterceptor.showNotification(notification);
     }
 
     public void initCookieStore(){
@@ -227,7 +166,12 @@ public class HTTPRequest {
         if (cache != null) {
             builder = builder.cache(new Cache(new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString()), 10 * 1024 * 1024));  // 10 MiB
         }
-        builder = builder.addInterceptor(this.mLogInterceptor);
+        if (this.mLogInterceptor != null) {
+            builder = builder.addInterceptor(this.mLogInterceptor);
+        }
+        if (this.mChuckInterceptor != null) {
+            builder = builder.addInterceptor(this.mChuckInterceptor);
+        }
         if (interceptors != null) {
             for (int i = 0; i < interceptors.size(); i++) {
                 if (interceptors.get(i) != null) {
@@ -267,16 +211,38 @@ public class HTTPRequest {
         this.mCookieStore.clear();
     }
 
-    public void setLogLevel(HttpLoggingInterceptor.Level level) {
-        this.mLogInterceptor.setLevel(level);
-    }
-
     public void clearRequestCache() {
         this.DB.FlushAll();
     }
 
-    public static class ParamHeader {
-        public String name      = "";
-        public Object value     = "";
+    public boolean isNetworkAvailable(Context ctx) {
+        NetworkInfo localNetworkInfo = ((ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
+        return (localNetworkInfo != null) && (localNetworkInfo.isConnected());
+    }
+
+    public void send(Request request) {
+        request.newBuilder()
+                .baseUrl(this.mBaseURL)
+                .dbHelper(this.DB)
+                .build();
+        Call call               = this.mHTTPClient.newCall(request);
+        request.onStart();
+        if (!this.isNetworkAvailable(request.context())) {
+            request.onNetworkError();
+            return;
+        }
+        call.enqueue(request);
+    }
+
+    public void cancelAllRequest(Context ctx){
+        // Should watch this two line bellow! a dangerous method
+        // Likely will trigger crash when type for suggestion search
+        this.mHTTPClient.dispatcher().cancelAll();
+        for (Call call : this.mHTTPClient.dispatcher().queuedCalls()) {
+            call.cancel();
+        }
+        for (Call call : this.mHTTPClient.dispatcher().runningCalls()) {
+            call.cancel();
+        }
     }
 }

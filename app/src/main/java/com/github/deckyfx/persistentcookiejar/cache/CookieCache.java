@@ -18,7 +18,7 @@ package com.github.deckyfx.persistentcookiejar.cache;
 
 import java.util.Collection;
 
-import okhttp3.Cookie;
+import com.github.deckyfx.okhttp3.Cookie;
 
 /**
  * A CookieCache handles the volatile cookie session storage.

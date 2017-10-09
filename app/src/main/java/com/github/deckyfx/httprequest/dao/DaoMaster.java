@@ -6,9 +6,9 @@ import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.util.Log;
 
 import com.github.deckyfx.greendao.AbstractDaoMaster;
-import com.github.deckyfx.greendao.database.StandardDatabase;
 import com.github.deckyfx.greendao.database.Database;
 import com.github.deckyfx.greendao.database.DatabaseOpenHelper;
+import com.github.deckyfx.greendao.database.StandardDatabase;
 import com.github.deckyfx.greendao.identityscope.IdentityScopeType;
 
 
