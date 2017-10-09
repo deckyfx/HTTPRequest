@@ -64,7 +64,7 @@ public class Request extends com.github.deckyfx.okhttp3.Request implements Callb
     private volatile CacheControl cacheControl = null; // Lazily initialized.
     private DBHelper db                     = null;
     private boolean isFinished              = false;
-    private RequestHandler requestHandler   = null;
+    private RequestListener requestHandler   = null;
 
     Request(Builder builder) {
         super(builder);
@@ -360,7 +360,7 @@ public class Request extends com.github.deckyfx.okhttp3.Request implements Callb
         private volatile CacheControl cacheControl = null; // Lazily initialized.
         private DBHelper db                     = null;
         private boolean isFinished              = false;
-        private RequestHandler requestHandler   = null;
+        private RequestListener requestHandler   = null;
 
         public Builder() {
             super();
@@ -577,7 +577,7 @@ public class Request extends com.github.deckyfx.okhttp3.Request implements Callb
             return this.addHeader("Authorization", auth + " " + token);
         }
 
-        public Builder listener(RequestHandler requestHandler){
+        public Builder listener(RequestListener requestHandler){
             this.requestHandler = requestHandler;
             return this;
         }
@@ -639,7 +639,7 @@ public class Request extends com.github.deckyfx.okhttp3.Request implements Callb
             if (!Patterns.WEB_URL.matcher(this.url.toString()).matches()) {
                 this.url(this.getAbsoluteUrl(this.url.toString()));
             }
-            if (this.method.equals(Method.GET)) {
+            if (this.method.equals(HttpMethod.GET)) {
                 HttpUrl parsed_url = HttpUrl.parse(url.toString());
                 HttpUrl.Builder urlBuilder;
                 if (parsed_url != null) {
