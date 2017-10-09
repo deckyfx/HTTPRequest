@@ -15,6 +15,7 @@
  */
 package com.github.deckyfx.logging.chuck.internal.support;
 
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
