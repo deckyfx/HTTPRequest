@@ -407,6 +407,10 @@ public class Request extends com.github.deckyfx.okhttp3.Request implements Callb
             return this;
         }
 
+        public Builder addHeader(KeyValuePair pair) {
+            return this.addHeader(pair.getKey(), pair.getValue());
+        }
+
         /**
          * Sets the URL target of this request.
          *
