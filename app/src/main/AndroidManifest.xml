@@ -24,21 +24,21 @@
         android:label="@string/app_name"
         android:supportsRtl="true">
         <provider
-            android:name=".logging.chuck.internal.data.ChuckContentProvider"
+            android:name="com.github.deckyfx.logging.chuck.internal.data.ChuckContentProvider"
             android:authorities="${applicationId}.logging.chuck.provider"
             android:exported="false" />
         <activity
-            android:name=".logging.chuckop.internal.ui.MainActivity"
+            android:name="com.github.deckyfx.logging.chuck.internal.ui.MainActivity"
             android:label="@string/chuck_name"
             android:launchMode="singleTask"
             android:taskAffinity="com.github.deckyfx.httprequest.logging.chuckop.task"
             android:theme="@style/Chuck.Theme" />
 
-        <activity android:name=".logging.chuckop.internal.ui.TransactionActivity"
+        <activity android:name="com.github.deckyfx.logging.chuck.internal.ui.TransactionActivity"
             android:theme="@style/Chuck.Theme"
-            android:parentActivityName=".logging.chuckop.internal.ui.MainActivity"/>
+            android:parentActivityName="com.github.deckyfx.logging.chuck.internal.ui.MainActivity"/>
         <service
-            android:name=".logging.chuckop.internal.support.ClearTransactionsService"
+            android:name="com.github.deckyfx.logging.chuck.internal.support.ClearTransactionsService"
             android:exported="false" />
     </application>
 
