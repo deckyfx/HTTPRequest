@@ -22,7 +22,7 @@ Add the dependency
 
 ```gradle
 dependencies {
-    compile 'com.squareup.okhttp3:okhttp:3.9.0'
+    compile 'com.github.deckyfx.httprequest:-SNAPSHOT'
     compile 'com.github.deckyfx:dbhelper:-SNAPSHOT'
 }
 ```
@@ -37,20 +37,62 @@ HTTPRequest HTTP_CLIENT = new HTTPRequest(App.MAIN_CONTEXT);
 HTTP_CLIENT.setRequestTimeOut(15);
 HTTP_CLIENT.initRequestCache();
 HTTP_CLIENT.initCookieStore();
-HTTP_CLIENT.setLogLevel(/* HttpLoggingInterceptor.Level */);
 HTTP_CLIENT.setBaseURL(/* your REST API home url */);
 HTTP_CLIENT.addApplicationInterceptor(/* Interceptor goes here */);
+HTTP_CLIENT.enableHTTPLogging(/* HttpLoggingInterceptor.Level */);
+HTTP_CLIENT.enableChuckLogging(/* Should we show notification? */);
 HTTP_CLIENT.initHTTPCLient();
 ...
 
 ```
 
-Then init DBSession
+Then Start Request by Calling
 ```java
 ...
-HashMap<String, Object> params = new HashMap<String, Object>();
-HashMap<String, Object> headers = new HashMap<String, Object>();
-this.G.HTTP_CLIENT.send(/* context */, /* path or full url */, /* Method */, params, headers, /* request ID */, /* callback */);
+Request request = new Request.Builder(this)
+            .url("http://google.com")
+            .build();
+this.G.HTTP_CLIENT.send(request);
+...
+
+```
+
+POST data
+```java
+...
+Request request = new Request.Builder(this)
+            .url("/apipath")
+            .addParam("name", "John Doe")
+            .method(HttpMethod.POST)
+            .build();
+this.G.HTTP_CLIENT.send(request);
+...
+```
+
+Upload File
+```java
+...
+Request request = new Request.Builder(this)
+           .url("/apipath")
+           .addParam("file", new File(/* File Path*/))
+           .method(HttpMethod.POST)
+           .build();
+this.G.HTTP_CLIENT.send(request);
+...
+
+```
+
+Header and Listener
+```java
+...
+Request request = new Request.Builder(this)
+           .url("/apipath")
+           .addHeader("XHTTPHeader", "value")
+           .addParam("asGET", "value")
+           .method(HttpMethod.GET)
+           .listener(this)
+           .build();
+this.G.HTTP_CLIENT.send(request);
 ...
 
 ```

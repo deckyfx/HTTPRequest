@@ -368,6 +368,13 @@ public class Request extends com.github.deckyfx.okhttp3.Request implements Callb
             this.headers        = new Headers.Builder();
         }
 
+        public Builder(Context ctx) {
+            super();
+            this.method         = HttpMethod.GET;
+            this.headers        = new Headers.Builder();
+            this.context(ctx);
+        }
+
         public Builder(Request request) {
             super(request);
             this.url            = request.url;
@@ -549,12 +556,12 @@ public class Request extends com.github.deckyfx.okhttp3.Request implements Callb
         public Builder params(Map<String, Object> params){
             this.params = new HashMap<>();
             for (Map.Entry<String, Object> param : params.entrySet()) {
-                this.params(param.getKey(), param.getValue());
+                this.addParam(param.getKey(), param.getValue());
             }
             return this;
         }
 
-        public Builder params(String key, Object value) {
+        public Builder addParam(String key, Object value) {
             this.params.put(key, value);
             if (value instanceof File) {
                 this.containFile = true;
@@ -570,7 +577,7 @@ public class Request extends com.github.deckyfx.okhttp3.Request implements Callb
             return this.addHeader("Authorization", auth + " " + token);
         }
 
-        public Builder requestHandler(RequestHandler requestHandler){
+        public Builder listener(RequestHandler requestHandler){
             this.requestHandler = requestHandler;
             return this;
         }
