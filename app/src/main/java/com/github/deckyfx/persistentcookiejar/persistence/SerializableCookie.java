@@ -25,7 +25,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
-import com.github.deckyfx.okhttp3.Cookie;
+import okhttp3.Cookie;
 
 public class SerializableCookie implements Serializable {
     private static final String TAG = SerializableCookie.class.getSimpleName();

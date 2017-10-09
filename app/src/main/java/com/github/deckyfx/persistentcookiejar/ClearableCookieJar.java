@@ -16,10 +16,10 @@
 
 package com.github.deckyfx.persistentcookiejar;
 
-import com.github.deckyfx.okhttp3.CookieJar;
+import okhttp3.CookieJar;
 
 /**
- * This interface extends {@link com.github.deckyfx.okhttp3.CookieJar} and adds methods to clear the cookies.
+ * This interface extends {@link okhttp3.CookieJar} and adds methods to clear the cookies.
  */
 public interface ClearableCookieJar extends CookieJar {
 

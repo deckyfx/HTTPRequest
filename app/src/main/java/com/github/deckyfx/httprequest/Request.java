@@ -22,20 +22,6 @@ import android.net.Uri;
 import android.util.Patterns;
 import android.webkit.MimeTypeMap;
 
-import com.github.deckyfx.okhttp3.CacheControl;
-import com.github.deckyfx.okhttp3.Call;
-import com.github.deckyfx.okhttp3.Callback;
-import com.github.deckyfx.okhttp3.Credentials;
-import com.github.deckyfx.okhttp3.FormBody;
-import com.github.deckyfx.okhttp3.Headers;
-import com.github.deckyfx.okhttp3.HttpUrl;
-import com.github.deckyfx.okhttp3.MediaType;
-import com.github.deckyfx.okhttp3.MultipartBody;
-import com.github.deckyfx.okhttp3.RequestBody;
-import com.github.deckyfx.okhttp3.Response;
-import com.github.deckyfx.okhttp3.internal.Util;
-import com.github.deckyfx.okhttp3.internal.http.HttpMethod;
-
 import org.json.JSONObject;
 
 import java.io.File;
@@ -48,11 +34,24 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import okhttp3.CacheControl;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Credentials;
+import okhttp3.FormBody;
+import okhttp3.Headers;
+import okhttp3.HttpUrl;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.internal.Util;
+
 /**
  * An HTTP request. Instances of this class are immutable if their {@link #body} is null or itself
  * immutable.
  */
-public class Request extends com.github.deckyfx.okhttp3.Request implements Callback {
+public class Request implements Callback {
     private Context ctx                     = null;
     private HttpUrl url                     = null;
     private HttpUrl baseURL                 = null;
@@ -67,7 +66,6 @@ public class Request extends com.github.deckyfx.okhttp3.Request implements Callb
     private RequestListener requestHandler   = null;
 
     Request(Builder builder) {
-        super(builder);
         this.url                = builder.buildURL();
         this.method             = builder.method;
         this.headers            = builder.headers.build();
@@ -346,7 +344,7 @@ public class Request extends com.github.deckyfx.okhttp3.Request implements Callb
         }
     }
 
-    public static class Builder extends com.github.deckyfx.okhttp3.Request.Builder {
+    public static class Builder {
         private Context ctx                     = null;
         private HttpUrl url                     = null;
         private HttpUrl baseURL                 = null;
@@ -376,7 +374,6 @@ public class Request extends com.github.deckyfx.okhttp3.Request implements Callb
         }
 
         public Builder(Request request) {
-            super(request);
             this.url            = request.url;
             this.method         = request.method;
             this.body           = request.body;
@@ -520,10 +517,10 @@ public class Request extends com.github.deckyfx.okhttp3.Request implements Callb
         public Builder method(String method, @Nullable RequestBody body) {
             if (method == null) throw new NullPointerException("method == null");
             if (method.length() == 0) throw new IllegalArgumentException("method.length() == 0");
-            if (body != null && !HttpMethod.permitsRequestBody(method)) {
+            if (body != null && !okhttp3.internal.http.HttpMethod.permitsRequestBody(method)) {
                 throw new IllegalArgumentException("method " + method + " must not have a request body.");
             }
-            if (body == null && HttpMethod.requiresRequestBody(method)) {
+            if (body == null && okhttp3.internal.http.HttpMethod.requiresRequestBody(method)) {
                 throw new IllegalArgumentException("method " + method + " must have a request body.");
             }
             this.method = method;

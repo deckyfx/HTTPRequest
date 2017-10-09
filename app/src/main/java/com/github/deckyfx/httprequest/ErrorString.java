@@ -4,7 +4,7 @@ package com.github.deckyfx.httprequest;
  * Created by decky on 10/9/17.
  */
 
-public class ErrorString {
+public final class ErrorString {
     public static final String NO_ACTIVE_INTERNET           = "No active internet available";
     public static final String REQUEST_ERROR                = "Request Error";
     public static final String FAILED_RESPONSE              = "Server return failed response";

@@ -7,8 +7,8 @@ package com.github.deckyfx.httprequest;
 
 import java.io.IOException;
 
-import com.github.deckyfx.okhttp3.MediaType;
-import com.github.deckyfx.okhttp3.ResponseBody;
+import okhttp3.MediaType;
+import okhttp3.ResponseBody;
 import okio.Buffer;
 import okio.BufferedSource;
 import okio.ForwardingSource;

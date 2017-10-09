@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Locale;
 
 import nl.qbusict.cupboard.annotation.Index;
-import com.github.deckyfx.okhttp3.Headers;
+import okhttp3.Headers;
 
 public class HttpTransaction {
 

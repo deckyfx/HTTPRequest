@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import com.github.deckyfx.okhttp3.Cookie;
+import okhttp3.Cookie;
 
 /**
  * This class decorates a Cookie to re-implements equals() and hashcode() methods in order to identify

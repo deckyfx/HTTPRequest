@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import com.github.deckyfx.okhttp3.Cookie;
+import okhttp3.Cookie;
 
 public class SetCookieCache implements CookieCache {
 

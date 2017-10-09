@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import com.github.deckyfx.okhttp3.Cookie;
-import com.github.deckyfx.okhttp3.HttpUrl;
+import okhttp3.Cookie;
+import okhttp3.HttpUrl;
 
 public class PersistentCookieJar implements ClearableCookieJar {
 

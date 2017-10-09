@@ -25,7 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import com.github.deckyfx.okhttp3.Cookie;
+import okhttp3.Cookie;
 
 @SuppressLint("CommitPrefEdits")
 public class SharedPrefsCookiePersistor implements CookiePersistor {

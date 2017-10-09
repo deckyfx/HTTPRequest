@@ -23,7 +23,7 @@ Add the dependency
 ```gradle
 dependencies {
     compile 'com.github.deckyfx.httprequest:-SNAPSHOT'
-    compile 'com.github.deckyfx:dbhelper:-SNAPSHOT'
+    compile group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.9.0'
 }
 ```
 

@@ -19,7 +19,7 @@ package com.github.deckyfx.persistentcookiejar.persistence;
 import java.util.Collection;
 import java.util.List;
 
-import com.github.deckyfx.okhttp3.Cookie;
+import okhttp3.Cookie;
 
 /**
  * A CookiePersistor handles the persistent cookie storage.

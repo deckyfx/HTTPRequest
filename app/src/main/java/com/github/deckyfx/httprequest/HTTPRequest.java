@@ -7,13 +7,6 @@ import android.net.NetworkInfo;
 import com.github.deckyfx.httprequest.dao.DaoMaster;
 import com.github.deckyfx.logging.HttpLoggingInterceptor;
 import com.github.deckyfx.logging.chuck.ChuckInterceptor;
-import com.github.deckyfx.okhttp3.Authenticator;
-import com.github.deckyfx.okhttp3.Cache;
-import com.github.deckyfx.okhttp3.Call;
-import com.github.deckyfx.okhttp3.Cookie;
-import com.github.deckyfx.okhttp3.HttpUrl;
-import com.github.deckyfx.okhttp3.Interceptor;
-import com.github.deckyfx.okhttp3.OkHttpClient;
 import com.github.deckyfx.persistentcookiejar.ClearableCookieJar;
 import com.github.deckyfx.persistentcookiejar.PersistentCookieJar;
 import com.github.deckyfx.persistentcookiejar.cache.SetCookieCache;
@@ -26,9 +19,16 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import okhttp3.Authenticator;
+import okhttp3.Cache;
+import okhttp3.Call;
+import okhttp3.Cookie;
+import okhttp3.HttpUrl;
+import okhttp3.Interceptor;
+import okhttp3.OkHttpClient;
 
 
 
@@ -225,7 +225,16 @@ public class HTTPRequest {
                 .baseUrl(this.mBaseURL)
                 .dbHelper(this.DB)
                 .build();
-        Call call               = this.mHTTPClient.newCall(request);
+
+        okhttp3.Request req = new okhttp3.Request.Builder()
+            .url(request.url())
+            .cacheControl(request.cacheControl())
+            .tag(request.tag())
+            .method(request.method(), request.body())
+            .headers(request.headers())
+            .build();
+
+        Call call               = this.mHTTPClient.newCall(req);
         request.onStart();
         if (!this.isNetworkAvailable(request.context())) {
             request.onNetworkError();
