@@ -66,7 +66,7 @@ public class Request implements Callback {
     private RequestListener requestHandler   = null;
 
     Request(Builder builder) {
-        this.url                = builder.buildURL();
+        this.url                = builder.url;
         this.method             = builder.method;
         this.headers            = builder.headers.build();
         this.body               = builder.buildBody();
@@ -425,8 +425,16 @@ public class Request implements Callback {
             }
 
             HttpUrl parsed = HttpUrl.parse(url);
-            if (parsed == null) throw new IllegalArgumentException("unexpected url: " + url);
-            return this.url(parsed);
+            if (parsed != null) {
+                return this.url(parsed);
+            }
+            if (this.baseURL != null) {
+                parsed = this.buildURL(url);
+                if (parsed != null) {
+                    return this.url(parsed);
+                }
+            }
+            throw new IllegalArgumentException("unexpected url: " + url);
         }
 
         /**
@@ -539,11 +547,6 @@ public class Request implements Callback {
 
         public Request build() {
             if (url == null) throw new IllegalStateException("url == null");
-
-            this.buildURL();
-            this.buildBody();
-            new CacheControl.Builder().noCache().build();
-
             return new Request(this);
         }
 
@@ -636,12 +639,13 @@ public class Request implements Callback {
             }
         }
 
-        private HttpUrl buildURL() {
-            if (!Patterns.WEB_URL.matcher(this.url.toString()).matches()) {
-                this.url(this.getAbsoluteUrl(this.url.toString()));
+        private HttpUrl buildURL(String url) {
+            if (!Patterns.WEB_URL.matcher(url).matches()) {
+                this.url(this.getAbsoluteUrl(url));
             }
+            HttpUrl parsed_url = null;
             if (this.method.equals(HttpMethod.GET)) {
-                HttpUrl parsed_url = HttpUrl.parse(url.toString());
+                parsed_url = HttpUrl.parse(url);
                 HttpUrl.Builder urlBuilder;
                 if (parsed_url != null) {
                     urlBuilder = parsed_url.newBuilder();
@@ -659,10 +663,13 @@ public class Request implements Callback {
                     return urlBuilder.build();
                 }
             }
-            return this.url;
+            return parsed_url;
         }
 
         private RequestBody buildBody() {
+            if (this.body != null && this.params.size() == 0) {
+                return this.body;
+            }
             if (this.containFile) {
                 MultipartBody.Builder bodyBuilder = new MultipartBody.Builder();
                 bodyBuilder.setType(MultipartBody.FORM);
