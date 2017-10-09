@@ -64,6 +64,7 @@ dependencies {
     compile group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
     compile group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.9.0'
     compile 'com.github.deckyfx:dbhelper:-SNAPSHOT'
+    compile group: 'com.squareup.okio', name: 'okio', version: '1.13.0'
 
     compile 'com.google.code.gson:gson:2.8.0'
     compile 'nl.qbusict:cupboard:2.2.0'
