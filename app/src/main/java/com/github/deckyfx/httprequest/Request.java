@@ -61,14 +61,15 @@ public class Request implements Callback {
     private Headers headers                     = null;
     private @Nullable RequestBody body          = null;
     private Object tag                          = null;
+    private DBHelper db                         = null;
     private Map<String, Object> params          = null;
     private volatile CacheControl cacheControl  = null; // Lazily initialized.
-    private DBHelper db                         = null;
-    private boolean isFinished                  = false;
     private RequestListener requestHandler      = null;
     private Call call                           = null;
+    private boolean isFinished                  = false;
 
     Request(Builder builder) {
+        this.ctx                = builder.ctx;
         this.url                = builder.url;
         this.path               = builder.path;
         this.method             = builder.method;
@@ -78,6 +79,8 @@ public class Request implements Callback {
         this.db                 = builder.db;
         this.params             = builder.params;
         this.requestHandler     = builder.requestHandler;
+        this.call               = builder.call;
+        this.cacheControl       = builder.cacheControl;
     }
 
     public HttpUrl url() {
@@ -355,20 +358,21 @@ public class Request implements Callback {
     }
 
     public static class Builder {
-        private Context ctx                     = null;
-        private HttpUrl url                     = null;
-        private String path                     = null;
-        private String method                   = "";
-        private Headers.Builder headers         = null;
-        private Map<String, Object> params      = new HashMap<String, Object>();
-        private @Nullable RequestBody body      = null;
-        private Object tag                      = null;
-        private boolean containFile             = false;
-        private long contentLength              = 0;
-        private volatile CacheControl cacheControl = null; // Lazily initialized.
-        private DBHelper db                     = null;
-        private boolean isFinished              = false;
-        private RequestListener requestHandler   = null;
+        private Context ctx                         = null;
+        private HttpUrl url                         = null;
+        private String path                         = null;
+        private String method                       = "";
+        private Headers.Builder headers             = null;
+        private @Nullable RequestBody body          = null;
+        private Object tag                          = null;
+        private DBHelper db                         = null;
+        private Map<String, Object> params          = new HashMap<String, Object>();
+        private volatile CacheControl cacheControl  = null; // Lazily initialized.
+        private RequestListener requestHandler      = null;
+        private Call call                           = null;
+        private boolean isFinished                  = false;
+        private boolean containFile                 = false;
+        private long contentLength                  = 0;
 
         public Builder() {
             super();
@@ -384,11 +388,18 @@ public class Request implements Callback {
         }
 
         public Builder(Request request) {
-            this.url            = request.url;
-            this.method         = request.method;
-            this.body           = request.body;
-            this.tag            = request.tag;
-            this.headers        = request.headers.newBuilder();
+            this.ctx                = request.ctx;
+            this.url                = request.url;
+            this.path               = request.path;
+            this.method             = request.method;
+            this.headers            = request.headers.newBuilder();
+            this.body               = request.body;
+            this.tag                = request.tag;
+            this.db                 = request.db;
+            this.params             = request.params;
+            this.requestHandler     = request.requestHandler;
+            this.cacheControl       = request.cacheControl;
+            this.call               = request.call;
         }
 
         public Builder context(Context ctx){
