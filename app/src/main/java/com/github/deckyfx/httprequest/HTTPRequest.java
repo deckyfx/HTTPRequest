@@ -15,7 +15,6 @@ import com.github.deckyfx.persistentcookiejar.persistence.SharedPrefsCookiePersi
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,13 +23,12 @@ import java.util.concurrent.TimeUnit;
 
 import okhttp3.Authenticator;
 import okhttp3.Cache;
+import okhttp3.CacheControl;
 import okhttp3.Call;
 import okhttp3.Cookie;
 import okhttp3.HttpUrl;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
-
-
 
 /**
  * Created by decky on 9/8/16.
@@ -40,12 +38,13 @@ public class HTTPRequest {
 
     private Context                 mContext;
     private OkHttpClient            mHTTPClient;
-    private String                  mBaseURL;
+    private HttpUrl                 mBaseURL;
     private ClearableCookieJar      mCookieStore;
     private ArrayList<Interceptor>  mApplicationInterceptors    = new ArrayList<Interceptor>(),
                                     mNetworkInterceptors        = new ArrayList<Interceptor>();
     protected DBHelper              DB;
     private Cache                   mRequestCache;
+    private CacheControl            mCacheControl;
     private int                     mConnectTimeOut             = 30;
     private int                     mWriteTimeOut               = 30;
     private int                     mReadTimeOut                = 30;
@@ -60,28 +59,30 @@ public class HTTPRequest {
 
     public HashMap<String, Cookie> getCookies(){
         HashMap<String, Cookie> result = new HashMap<String, Cookie>();
-        URI uri = null;
-        try {
-            List<Cookie> cookielist = this.mCookieStore.loadForRequest(HttpUrl.parse(this.mBaseURL));
-            uri = new URI(this.mBaseURL);
-            String domain = uri.getHost();
-            domain = domain.startsWith("www.") ? domain.substring(4) : domain;
-            for (Cookie cookie : cookielist) {
-                if (cookie.domain().equals(domain)) {
-                    result.put(cookie.name(), cookie);
-                }
+        List<Cookie> cookielist = this.mCookieStore.loadForRequest(this.mBaseURL);
+        URI uri = this.mBaseURL.uri();
+        String domain = uri.getHost();
+        domain = domain.startsWith("www.") ? domain.substring(4) : domain;
+        for (Cookie cookie : cookielist) {
+            if (cookie.domain().equals(domain)) {
+                result.put(cookie.name(), cookie);
             }
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
         }
         return result;
     }
 
-    public void setBaseURL(String url){
-        this.mBaseURL = url;
+    public void setBaseURL(HttpUrl baseURL) {
+        if (baseURL == null) throw new NullPointerException("url == null");
+        this.mBaseURL = baseURL;
     }
 
-    public String getBaseURL(){
+    public void setBaseURL(String baseURL){
+        HttpUrl parsed = HttpUrl.parse(baseURL);
+        if (parsed == null) throw new IllegalArgumentException("unexpected url: " + baseURL);
+        this.setBaseURL(parsed);
+    }
+
+    public HttpUrl getBaseURL(){
         return this.mBaseURL;
     }
 
@@ -149,6 +150,10 @@ public class HTTPRequest {
     public void removeAllInterceptors() {
         this.mApplicationInterceptors.removeAll(this.mApplicationInterceptors);
         this.mNetworkInterceptors.removeAll(this.mNetworkInterceptors);
+    }
+
+    public void setCacheControl(CacheControl cacheControl){
+        this.mCacheControl = cacheControl;
     }
 
     public OkHttpClient createHTTPClient(int timeout, ClearableCookieJar cookieJar, Cache cache,
@@ -221,10 +226,11 @@ public class HTTPRequest {
     }
 
     public void send(Request request) {
-        request.newBuilder()
-                .baseUrl(this.mBaseURL)
-                .dbHelper(this.DB)
-                .build();
+        Request.Builder builder = request.newBuilder();
+        if (request.url() == null && request.path() != null && this.mBaseURL != null) builder.url(this.mBaseURL).path(request.path());
+        if (this.DB != null) builder.dbHelper(this.DB);
+        if (this.mCacheControl != null && request.cacheControl() == null) builder.cacheControl(this.mCacheControl);
+        request = builder.build();
 
         okhttp3.Request req = new okhttp3.Request.Builder()
             .url(request.url())

@@ -22,6 +22,8 @@ import android.net.Uri;
 import android.util.Patterns;
 import android.webkit.MimeTypeMap;
 
+import com.github.deckyfx.greendao.annotation.NotNull;
+
 import org.json.JSONObject;
 
 import java.io.File;
@@ -52,24 +54,26 @@ import okhttp3.internal.Util;
  * immutable.
  */
 public class Request implements Callback {
-    private Context ctx                     = null;
-    private HttpUrl url                     = null;
-    private HttpUrl baseURL                 = null;
-    private String method                   = "";
-    private Headers headers                 = null;
-    private @Nullable RequestBody body      = null;
-    private Object tag                      = null;
-    private Map<String, Object> params      = null;
-    private volatile CacheControl cacheControl = null; // Lazily initialized.
-    private DBHelper db                     = null;
-    private boolean isFinished              = false;
-    private RequestListener requestHandler   = null;
+    private Context ctx                         = null;
+    private HttpUrl url                         = null;
+    private String path                         = null;
+    private String method                       = "";
+    private Headers headers                     = null;
+    private @Nullable RequestBody body          = null;
+    private Object tag                          = null;
+    private Map<String, Object> params          = null;
+    private volatile CacheControl cacheControl  = null; // Lazily initialized.
+    private DBHelper db                         = null;
+    private boolean isFinished                  = false;
+    private RequestListener requestHandler      = null;
+    private Call call                           = null;
 
     Request(Builder builder) {
         this.url                = builder.url;
+        this.path               = builder.path;
         this.method             = builder.method;
         this.headers            = builder.headers.build();
-        this.body               = builder.buildBody();
+        this.body               = builder.body;
         this.tag                = builder.tag != null ? builder.tag : this;
         this.db                 = builder.db;
         this.params             = builder.params;
@@ -132,12 +136,12 @@ public class Request implements Callback {
                 + '}';
     }
 
-    public Context context(){
-        return this.ctx;
+    public String path() {
+        return this.path;
     }
 
-    public String getMethod(){
-        return this.method.toUpperCase(Locale.getDefault());
+    public Context context(){
+        return this.ctx;
     }
 
     public DBHelper dbHelper(){
@@ -148,8 +152,13 @@ public class Request implements Callback {
         return this.isFinished;
     }
 
+    public Call call() {
+        return this.call;
+    }
+
     @Override
     public void onFailure(Call call, IOException e) {
+        this.call = call;
         String errorMessage = e.getMessage();
         if (e != null) {
             if (errorMessage.equals(ErrorString.REQUEST_FAILED)) {
@@ -180,6 +189,7 @@ public class Request implements Callback {
 
     @Override
     public void onResponse(Call call, Response response) throws IOException {
+        this.call = call;
         byte[] response_bytes = new byte[0];
         try {
             response_bytes = response.body().bytes();
@@ -347,7 +357,7 @@ public class Request implements Callback {
     public static class Builder {
         private Context ctx                     = null;
         private HttpUrl url                     = null;
-        private HttpUrl baseURL                 = null;
+        private String path                     = null;
         private String method                   = "";
         private Headers.Builder headers         = null;
         private Map<String, Object> params      = new HashMap<String, Object>();
@@ -386,35 +396,14 @@ public class Request implements Callback {
             return this;
         }
 
-        public Builder baseUrl(HttpUrl url) {
-            if (url == null) throw new NullPointerException("url == null");
-            this.baseURL = url;
-            return this;
-        }
-        
-        public Builder baseUrl(String baseURL){
-            HttpUrl parsed = HttpUrl.parse(baseURL);
-            if (parsed == null) throw new IllegalArgumentException("unexpected url: " + baseURL);
-            return this.baseUrl(parsed);
-        }
-
-        public Builder url(HttpUrl url) {
-            if (url == null) throw new NullPointerException("url == null");
-            this.url = url;
-            return this;
-        }
-
-        public Builder addHeader(KeyValuePair pair) {
-            return this.addHeader(pair.getKey(), pair.getValue());
-        }
-
         /**
          * Sets the URL target of this request.
          *
          * @throws IllegalArgumentException if {@code url} is not a valid HTTP or HTTPS URL. Avoid this
          * exception by calling {@link HttpUrl#parse}; it returns null for invalid URLs.
          */
-        public Builder url(String url) {
+
+        public Builder url(@NotNull String url) {
             if (url == null) throw new NullPointerException("url == null");
 
             // Silently replace web socket URLs with HTTP URLs.
@@ -428,13 +417,13 @@ public class Request implements Callback {
             if (parsed != null) {
                 return this.url(parsed);
             }
-            if (this.baseURL != null) {
-                parsed = this.buildURL(url);
-                if (parsed != null) {
-                    return this.url(parsed);
-                }
-            }
             throw new IllegalArgumentException("unexpected url: " + url);
+        }
+
+        public Builder url(@NotNull HttpUrl url) {
+            if (url == null) throw new NullPointerException("url == null");
+            this.url = url;
+            return this;
         }
 
         /**
@@ -443,7 +432,7 @@ public class Request implements Callback {
          * @throws IllegalArgumentException if the scheme of {@code url} is not {@code http} or {@code
          * https}.
          */
-        public Builder url(URL url) {
+        public Builder url(@NotNull URL url) {
             if (url == null) throw new NullPointerException("url == null");
             HttpUrl parsed = HttpUrl.get(url);
             if (parsed == null) throw new IllegalArgumentException("unexpected url: " + url);
@@ -469,6 +458,10 @@ public class Request implements Callback {
         public Builder addHeader(String name, String value) {
             headers.add(name, value);
             return this;
+        }
+
+        public Builder addHeader(KeyValuePair pair) {
+            return this.addHeader(pair.getKey(), pair.getValue());
         }
 
         public Builder removeHeader(String name) {
@@ -547,10 +540,25 @@ public class Request implements Callback {
 
         public Request build() {
             if (url == null) throw new IllegalStateException("url == null");
+            this.url = this.buildURL();
+            this.body = this.buildBody();
+            if (!this.hasContentTypeHeader()) this.addContentLengthHeader().addContentTypeHeader();
             return new Request(this);
         }
 
         // Additional Methods
+
+        public Builder path(@NotNull String path){
+            if (path == null) throw new NullPointerException("baseURL == null");
+            this.path = path;
+            return this;
+        }
+
+        public Builder path(@NotNull String path, Object... arguments){
+            if (path == null) throw new NullPointerException("baseURL == null");
+            this.path = String.format(path, arguments);
+            return this;
+        }
 
         public Builder method(String method){
             this.method = method;
@@ -617,53 +625,22 @@ public class Request implements Callback {
             return (this.headers.get("Content-Type") != null);
         }
 
-        private String getAbsoluteUrl(String path) {
-            if (path.contains("http://") || path.contains("https://")) {
-                return path;
-            } else {
-                String pathFirstChar = "";
-                String baseLastChar = "";
-                if (path.length() > 0) {
-                    pathFirstChar = path.substring(0, 1);
-                }
-                if (this.baseURL.toString().length() > 0) {
-                    baseLastChar = this.baseURL.toString().substring(this.baseURL.toString().length() - 1);
-                }
-                String prefix = "";
-                if (!baseLastChar.equals("/") && !pathFirstChar.equals("/")) {
-                    prefix = "/";
-                } else if (baseLastChar.equals("/") && pathFirstChar.equals("/")) {
-                    path = path.substring(path.indexOf("/"));
-                }
-                return this.baseURL + prefix + path;
+        private HttpUrl buildURL() {
+            if (this.url == null) throw new NullPointerException("url == null");
+            HttpUrl.Builder builder = this.url.newBuilder();
+            if (this.path != null) {
+                builder.addPathSegment(this.path);
             }
-        }
-
-        private HttpUrl buildURL(String url) {
-            if (!Patterns.WEB_URL.matcher(url).matches()) {
-                this.url(this.getAbsoluteUrl(url));
-            }
-            HttpUrl parsed_url = null;
             if (this.method.equals(HttpMethod.GET)) {
-                parsed_url = HttpUrl.parse(url);
-                HttpUrl.Builder urlBuilder;
-                if (parsed_url != null) {
-                    urlBuilder = parsed_url.newBuilder();
-                } else {
-                    urlBuilder = new HttpUrl.Builder();
-                }
                 for (Map.Entry<String, Object> param : this.params.entrySet()) {
                     String param_value = "";
                     if (param.getValue() != null) {
                         param_value = param.getValue().toString();
                     }
-                    urlBuilder.addQueryParameter(param.getKey(), param_value);
-                }
-                if (parsed_url != null) {
-                    return urlBuilder.build();
+                    builder.addQueryParameter(param.getKey(), param_value);
                 }
             }
-            return parsed_url;
+            return builder.build();
         }
 
         private RequestBody buildBody() {

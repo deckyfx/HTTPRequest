@@ -63,7 +63,7 @@ POST data
 ```java
 ...
 Request request = new Request.Builder(this)
-            .url("/apipath")
+            .path("/apipath")
             .addParam("name", "John Doe")
             .method(HttpMethod.POST)
             .build();
@@ -75,7 +75,7 @@ Upload File
 ```java
 ...
 Request request = new Request.Builder(this)
-           .url("/apipath")
+           .path("/apipath")
            .addParam("file", new File(/* File Path*/))
            .method(HttpMethod.POST)
            .build();
@@ -88,7 +88,7 @@ Header and Listener
 ```java
 ...
 Request request = new Request.Builder(this)
-           .url("/apipath")
+           .path("/apipath")
            .addHeader("XHTTPHeader", "value")
            .addParam("asGET", "value")
            .method(HttpMethod.GET)
