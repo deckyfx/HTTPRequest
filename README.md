@@ -26,6 +26,11 @@ Add the dependency
 dependencies {
     compile 'com.github.deckyfx.httprequest:-SNAPSHOT'
     compile group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.9.0'
+    compile 'com.google.code.gson:gson:2.8.0'
+    compile 'nl.qbusict:cupboard:2.2.0'
+    compile "com.android.support:design:25.3.1"
+    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile "com.android.support:support-v4:+"
 }
 ```
 

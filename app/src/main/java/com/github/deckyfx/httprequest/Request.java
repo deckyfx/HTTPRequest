@@ -564,12 +564,14 @@ public class Request implements Callback {
 
         public Builder path(@NotNull String path){
             if (path == null) throw new NullPointerException("baseURL == null");
+            path = path.startsWith("/") ? path.substring(1) : path;
             this.path = path;
             return this;
         }
 
         public Builder path(@NotNull String path, Object... arguments){
             if (path == null) throw new NullPointerException("baseURL == null");
+            path = path.startsWith("/") ? path.substring(1) : path;
             this.path = String.format(path, arguments);
             return this;
         }
