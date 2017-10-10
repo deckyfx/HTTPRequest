@@ -575,6 +575,7 @@ public class Request implements Callback {
             return this;
         }
 
+
         public Builder method(String method){
             this.method = method;
             return this;
@@ -658,7 +659,10 @@ public class Request implements Callback {
             if (this.url == null) throw new NullPointerException("url == null");
             HttpUrl.Builder builder = this.url.newBuilder();
             if (this.path != null) {
-                builder.addEncodedPathSegment(this.path);
+                String[] paths = this.path.split("/");
+                for (String path : paths) {
+                    builder.addEncodedPathSegments(path);
+                }
             }
             if (this.method.equals(HttpMethod.GET)) {
                 for (Map.Entry<String, Object> param : this.params.entrySet()) {
