@@ -658,7 +658,7 @@ public class Request implements Callback {
             if (this.url == null) throw new NullPointerException("url == null");
             HttpUrl.Builder builder = this.url.newBuilder();
             if (this.path != null) {
-                builder.addPathSegment(this.path);
+                builder.addEncodedPathSegment(this.path);
             }
             if (this.method.equals(HttpMethod.GET)) {
                 for (Map.Entry<String, Object> param : this.params.entrySet()) {
