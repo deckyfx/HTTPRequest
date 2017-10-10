@@ -539,9 +539,13 @@ public class Request implements Callback {
         }
 
         public Request build() {
+            return this.build(false);
+        }
+
+        public Request build(boolean strict) {
             if (url == null) throw new IllegalStateException("url == null");
-            this.url = this.buildURL();
-            this.body = this.buildBody();
+            this.url = this.buildURL(strict);
+            this.body = this.buildBody(strict);
             if (!this.hasContentTypeHeader()) this.addContentLengthHeader().addContentTypeHeader();
             return new Request(this);
         }
@@ -625,7 +629,12 @@ public class Request implements Callback {
             return (this.headers.get("Content-Type") != null);
         }
 
-        private HttpUrl buildURL() {
+        private HttpUrl buildURL(boolean strict) {
+            if (strict) {
+                if (this.url == null) throw new NullPointerException("url == null");
+            } else {
+                if (this.url == null) return null;
+            }
             if (this.url == null) throw new NullPointerException("url == null");
             HttpUrl.Builder builder = this.url.newBuilder();
             if (this.path != null) {
@@ -643,7 +652,7 @@ public class Request implements Callback {
             return builder.build();
         }
 
-        private RequestBody buildBody() {
+        private RequestBody buildBody(boolean strict) {
             if (this.body != null && this.params.size() == 0) {
                 return this.body;
             }

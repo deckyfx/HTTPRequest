@@ -229,7 +229,10 @@ public class HTTPRequest {
         if (request.url() == null && request.path() != null && this.mBaseURL != null) builder.url(this.mBaseURL).path(request.path());
         if (this.DB != null) builder.dbHelper(this.DB);
         if (this.mCacheControl != null && request.cacheControl() == null) builder.cacheControl(this.mCacheControl);
-        request = builder.build();
+        request = builder.build(true);
+
+        // Final check url can not be empty
+        if (request.url() == null) throw new NullPointerException("url == null");
 
         okhttp3.Request req = new okhttp3.Request.Builder()
             .url(request.url())
