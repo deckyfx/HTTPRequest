@@ -665,6 +665,9 @@ public class Request implements Callback {
         }
 
         private RequestBody buildBody(boolean strict) {
+            if (!okhttp3.internal.http.HttpMethod.permitsRequestBody(this.method)) {
+                return null;
+            }
             if (this.body != null && this.params.size() == 0) {
                 return this.body;
             }
