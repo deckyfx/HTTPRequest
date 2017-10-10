@@ -556,7 +556,6 @@ public class Request implements Callback {
         public Request build(boolean strict) {
             this.url = this.buildURL(strict);
             this.body = this.buildBody(strict);
-            if (!this.hasContentTypeHeader()) this.addContentLengthHeader().addContentTypeHeader();
             return new Request(this);
         }
 
@@ -621,6 +620,12 @@ public class Request implements Callback {
         }
 
         public Builder addContentTypeHeader() {
+            String type;
+            if (this.body == null) {
+                type = "";
+            } else {
+                type = this.body.contentType().toString();
+            }
             return this.addHeader("Content-Type",    this.body.contentType().toString());
         }
 
@@ -629,6 +634,9 @@ public class Request implements Callback {
         }
 
         public long getContentLength() {
+            if (this.body == null) {
+                return 0;
+            }
             try {
                 this.contentLength = this.body.contentLength();
             } catch (IOException e) {
@@ -707,6 +715,7 @@ public class Request implements Callback {
                 }
                 this.body = bodyBuilder.build();
             }
+            if (!this.hasContentTypeHeader()) this.addContentLengthHeader().addContentTypeHeader();
             return this.body;
         }
     }
