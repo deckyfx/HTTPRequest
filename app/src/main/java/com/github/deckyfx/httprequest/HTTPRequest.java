@@ -53,7 +53,6 @@ public class HTTPRequest {
 
     public HTTPRequest(Context context){
         this.mContext = context;
-        this.setBaseURL("");
         this.DB = new DBHelper(this.mContext, DaoMaster.class, REQUEST_CACHE_DB_NAME);
     }
 
