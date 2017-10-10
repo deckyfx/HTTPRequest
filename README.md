@@ -1,12 +1,14 @@
 # httprequest
 [![](https://jitpack.io/v/deckyfx/httprequest.svg)](https://jitpack.io/#httprequest/dbsession)
 
-Android user session stored in sqlite db, this is implementation of 
+Extension of okhttp3, with many short hand methods, and event listeners 
 
+* okhttp3
 * deckyfx/dbhelper
 * deckyfx/simpleadapter
-* gson
 * greendao
+
+## Sample CodUsage
 
 Add it in your root build.gradle at the end of repositories:
 
