@@ -543,7 +543,6 @@ public class Request implements Callback {
         }
 
         public Request build(boolean strict) {
-            if (url == null) throw new IllegalStateException("url == null");
             this.url = this.buildURL(strict);
             this.body = this.buildBody(strict);
             if (!this.hasContentTypeHeader()) this.addContentLengthHeader().addContentTypeHeader();
