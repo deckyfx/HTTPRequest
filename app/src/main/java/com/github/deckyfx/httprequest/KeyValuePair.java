@@ -6,9 +6,9 @@ package com.github.deckyfx.httprequest;
 
 public class KeyValuePair {
     private String key;
-    private String value;
+    private Object value;
 
-    public KeyValuePair(String key, String value){
+    public KeyValuePair(String key, Object value){
         this.key = key;
         this.value = value;
     }
@@ -17,8 +17,12 @@ public class KeyValuePair {
         return key;
     }
 
-    public String getValue() {
+    public Object getValue() {
         return value;
+    }
+
+    public String getValueAsString() {
+        return String.valueOf(value);
     }
 
     public KeyValuePair key(String key) {
@@ -26,7 +30,7 @@ public class KeyValuePair {
         return this;
     }
 
-    public KeyValuePair value(String value) {
+    public KeyValuePair value(Object value) {
         this.value = value;
         return this;
     }

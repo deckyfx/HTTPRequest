@@ -19,10 +19,9 @@ import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.net.Uri;
-import android.util.Patterns;
+import android.support.annotation.Nullable;
+import android.support.annotation.NonNull;
 import android.webkit.MimeTypeMap;
-
-import com.github.deckyfx.greendao.annotation.NotNull;
 
 import org.json.JSONObject;
 
@@ -33,8 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.annotation.Nullable;
 
 import okhttp3.CacheControl;
 import okhttp3.Call;
@@ -414,7 +411,7 @@ public class Request implements Callback {
          * exception by calling {@link HttpUrl#parse}; it returns null for invalid URLs.
          */
 
-        public Builder url(@NotNull String url) {
+        public Builder url(@NonNull String url) {
             if (url == null) throw new NullPointerException("url == null");
 
             // Silently replace web socket URLs with HTTP URLs.
@@ -431,7 +428,7 @@ public class Request implements Callback {
             throw new IllegalArgumentException("unexpected url: " + url);
         }
 
-        public Builder url(@NotNull HttpUrl url) {
+        public Builder url(@NonNull HttpUrl url) {
             if (url == null) throw new NullPointerException("url == null");
             this.url = url;
             return this;
@@ -443,7 +440,7 @@ public class Request implements Callback {
          * @throws IllegalArgumentException if the scheme of {@code url} is not {@code http} or {@code
          * https}.
          */
-        public Builder url(@NotNull URL url) {
+        public Builder url(@NonNull URL url) {
             if (url == null) throw new NullPointerException("url == null");
             HttpUrl parsed = HttpUrl.get(url);
             if (parsed == null) throw new IllegalArgumentException("unexpected url: " + url);
@@ -472,7 +469,7 @@ public class Request implements Callback {
         }
 
         public Builder addHeader(KeyValuePair pair) {
-            return this.addHeader(pair.getKey(), pair.getValue());
+            return this.addHeader(pair.getKey(), pair.getValueAsString());
         }
 
         public Builder removeHeader(String name) {
@@ -561,14 +558,14 @@ public class Request implements Callback {
 
         // Additional Methods
 
-        public Builder path(@NotNull String path){
+        public Builder path(@NonNull String path){
             if (path == null) throw new NullPointerException("baseURL == null");
             path = path.startsWith("/") ? path.substring(1) : path;
             this.path = path;
             return this;
         }
 
-        public Builder path(@NotNull String path, Object... arguments){
+        public Builder path(@NonNull String path, Object... arguments){
             if (path == null) throw new NullPointerException("baseURL == null");
             path = path.startsWith("/") ? path.substring(1) : path;
             this.path = String.format(path, arguments);

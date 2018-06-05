@@ -96,4 +96,5 @@ dependencies {
     compileOnly "com.android.support:design:+"
     compileOnly "com.android.support:appcompat-v7:+"
     compileOnly "com.android.support:support-v4:+"
+    implementation 'org.jetbrains:annotations-java5:15.0'
 }
