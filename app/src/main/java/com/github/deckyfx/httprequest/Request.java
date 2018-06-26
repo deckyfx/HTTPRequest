@@ -60,6 +60,7 @@ public class Request implements Callback {
     private Object tag                          = null;
     private DBHelper db                         = null;
     private Map<String, Object> params          = null;
+    private Map<String, Object> queries         = null;
     private volatile CacheControl cacheControl  = null; // Lazily initialized.
     private RequestListener requestHandler      = null;
     private Call call                           = null;
@@ -75,6 +76,7 @@ public class Request implements Callback {
         this.tag                = builder.tag != null ? builder.tag : this;
         this.db                 = builder.db;
         this.params             = builder.params;
+        this.queries            = builder.queries;
         this.requestHandler     = builder.requestHandler;
         this.call               = builder.call;
         this.cacheControl       = builder.cacheControl;
@@ -364,6 +366,7 @@ public class Request implements Callback {
         private Object tag                          = null;
         private DBHelper db                         = null;
         private Map<String, Object> params          = new HashMap<String, Object>();
+        private Map<String,Object> queries           = new HashMap<String, Object>();
         private volatile CacheControl cacheControl  = null; // Lazily initialized.
         private RequestListener requestHandler      = null;
         private Call call                           = null;
@@ -572,7 +575,6 @@ public class Request implements Callback {
             return this;
         }
 
-
         public Builder method(String method){
             this.method = method;
             return this;
@@ -592,6 +594,27 @@ public class Request implements Callback {
                 this.containFile = true;
             }
             return this;
+        }
+
+        public Builder addParam(KeyValuePair pair) {
+            return this.addParam(pair.getKey(), pair.getValueAsString());
+        }
+
+        public Builder queries(Map<String, Object> params){
+            this.queries = new HashMap<>();
+            for (Map.Entry<String, Object> param : params.entrySet()) {
+                this.addQuery(param.getKey(), param.getValue());
+            }
+            return this;
+        }
+
+        public Builder addQuery(String key, Object value) {
+            this.queries.put(key, value);
+            return this;
+        }
+
+        public Builder addQuery(KeyValuePair pair) {
+            return this.addQuery(pair.getKey(), pair.getValueAsString());
         }
 
         public Builder authBasicHeader(String login, String password) {
@@ -663,6 +686,15 @@ public class Request implements Callback {
             }
             if (this.method.equals(HttpMethod.GET)) {
                 for (Map.Entry<String, Object> param : this.params.entrySet()) {
+                    String param_value = "";
+                    if (param.getValue() != null) {
+                        param_value = param.getValue().toString();
+                    }
+                    builder.addQueryParameter(param.getKey(), param_value);
+                }
+            }
+            if (!this.queries.isEmpty()) {
+                for (Map.Entry<String, Object> param : this.queries.entrySet()) {
                     String param_value = "";
                     if (param.getValue() != null) {
                         param_value = param.getValue().toString();
