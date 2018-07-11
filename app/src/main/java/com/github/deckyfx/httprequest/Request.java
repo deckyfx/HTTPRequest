@@ -397,6 +397,7 @@ public class Request implements Callback {
             this.tag                = request.tag;
             this.db                 = request.db;
             this.params             = request.params;
+            this.queries            = request.queries;
             this.requestHandler     = request.requestHandler;
             this.cacheControl       = request.cacheControl;
             this.call               = request.call;
