@@ -19,16 +19,14 @@ import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.net.Uri;
-import android.support.annotation.Nullable;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.webkit.MimeTypeMap;
-
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -59,8 +57,8 @@ public class Request implements Callback {
     private @Nullable RequestBody body          = null;
     private Object tag                          = null;
     private DBHelper db                         = null;
-    private Map<String, Object> params          = null;
-    private Map<String, Object> queries         = null;
+    private ArrayList<KeyValuePair> params      = null;
+    private ArrayList<KeyValuePair> queries     = null;
     private volatile CacheControl cacheControl  = null; // Lazily initialized.
     private RequestListener requestHandler      = null;
     private Call call                           = null;
@@ -128,7 +126,8 @@ public class Request implements Callback {
         return url.isHttps();
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "Request{method="
                 + method
                 + ", url="
@@ -158,6 +157,18 @@ public class Request implements Callback {
         return this.call;
     }
 
+    private String generateSimpleParam(ArrayList<KeyValuePair> params) {
+        StringBuilder sb = new StringBuilder();
+        for (KeyValuePair param : this.params) {
+            String param_value = "";
+            if (param.getValue() != null) {
+                param_value = param.getValueAsString();
+            }
+            sb.append(param.getKey()).append("=").append(param_value);
+        }
+        return sb.toString();
+    }
+
     @Override
     public void onFailure(Call call, IOException e) {
         this.call = call;
@@ -175,7 +186,7 @@ public class Request implements Callback {
 
             }
         }
-        String param_str = (new JSONObject(this.params)).toString();
+        String param_str = this.generateSimpleParam(this.params);
         String url = call.request().url().toString();
         String responseMessage = "";
 
@@ -201,7 +212,7 @@ public class Request implements Callback {
         int request_code = response.code();
         String url = call.request().url().toString();
         String message = response.message();
-        String param_str = (new JSONObject(this.params)).toString();
+        String param_str = this.generateSimpleParam(this.params);
         String errorMessage = "";
         String responMessage = "";
         if (response_bytes != null) {
@@ -365,8 +376,8 @@ public class Request implements Callback {
         private @Nullable RequestBody body          = null;
         private Object tag                          = null;
         private DBHelper db                         = null;
-        private Map<String, Object> params          = new HashMap<String, Object>();
-        private Map<String,Object> queries           = new HashMap<String, Object>();
+        private ArrayList<KeyValuePair> params      = new ArrayList<KeyValuePair>();
+        private ArrayList<KeyValuePair> queries     = new ArrayList<KeyValuePair>();
         private volatile CacheControl cacheControl  = null; // Lazily initialized.
         private RequestListener requestHandler      = null;
         private Call call                           = null;
@@ -582,40 +593,40 @@ public class Request implements Callback {
         }
 
         public Builder params(Map<String, Object> params){
-            this.params = new HashMap<>();
             for (Map.Entry<String, Object> param : params.entrySet()) {
-                this.addParam(param.getKey(), param.getValue());
+                this.addParam(new KeyValuePair(param.getKey(), param.getValue()));
             }
             return this;
         }
 
         public Builder addParam(String key, Object value) {
-            this.params.put(key, value);
-            if (value instanceof File) {
-                this.containFile = true;
-            }
+            this.addParam(new KeyValuePair(key, value));
             return this;
         }
 
         public Builder addParam(KeyValuePair pair) {
-            return this.addParam(pair.getKey(), pair.getValueAsString());
+            if (pair.getValue() instanceof File) {
+                this.containFile = true;
+            }
+            this.params.add(pair);
+            return this;
         }
 
         public Builder queries(Map<String, Object> params){
-            this.queries = new HashMap<>();
             for (Map.Entry<String, Object> param : params.entrySet()) {
-                this.addQuery(param.getKey(), param.getValue());
+                this.addQuery(new KeyValuePair(param.getKey(), param.getValue()));
             }
             return this;
         }
 
         public Builder addQuery(String key, Object value) {
-            this.queries.put(key, value);
+            this.addQuery(new KeyValuePair(key, value));
             return this;
         }
 
         public Builder addQuery(KeyValuePair pair) {
-            return this.addQuery(pair.getKey(), pair.getValueAsString());
+            this.queries.add(pair);
+            return this;
         }
 
         public Builder authBasicHeader(String login, String password) {
@@ -686,21 +697,29 @@ public class Request implements Callback {
                 }
             }
             if (this.method.equals(HttpMethod.GET)) {
-                for (Map.Entry<String, Object> param : this.params.entrySet()) {
+                for (KeyValuePair param : this.params) {
                     String param_value = "";
                     if (param.getValue() != null) {
-                        param_value = param.getValue().toString();
+                        param_value = param.getValueAsString();
                     }
-                    builder.addQueryParameter(param.getKey(), param_value);
+                    if (param.shouldEncode()) {
+                        builder.addQueryParameter(param.getKey(), param_value);
+                    } else {
+                        builder.addEncodedQueryParameter(param.getKey(), param_value);
+                    }
                 }
             }
             if (!this.queries.isEmpty()) {
-                for (Map.Entry<String, Object> param : this.queries.entrySet()) {
+                for (KeyValuePair param : this.queries) {
                     String param_value = "";
                     if (param.getValue() != null) {
-                        param_value = param.getValue().toString();
+                        param_value = param.getValueAsString();
                     }
-                    builder.addQueryParameter(param.getKey(), param_value);
+                    if (param.shouldEncode()) {
+                        builder.addQueryParameter(param.getKey(), param_value);
+                    } else {
+                        builder.addEncodedQueryParameter(param.getKey(), param_value);
+                    }
                 }
             }
             return builder.build();
@@ -716,7 +735,7 @@ public class Request implements Callback {
             if (this.containFile) {
                 MultipartBody.Builder bodyBuilder = new MultipartBody.Builder();
                 bodyBuilder.setType(MultipartBody.FORM);
-                for (Map.Entry<String, Object> param : this.params.entrySet()) {
+                for (KeyValuePair param : this.params) {
                     if (param.getValue() instanceof File) {
                         File f = (File) param.getValue();
                         String mimeType = null;
@@ -740,12 +759,16 @@ public class Request implements Callback {
                 }
             } else {
                 FormBody.Builder bodyBuilder = new FormBody.Builder();
-                for (Map.Entry<String, Object> param : this.params.entrySet()) {
+                for (KeyValuePair param : this.params) {
                     String param_value = "";
                     if (param.getValue() != null) {
-                        param_value = param.getValue().toString();
+                        param_value = param.getValueAsString();
                     }
-                    bodyBuilder.add(param.getKey(), param_value);
+                    if (param.shouldEncode()) {
+                        bodyBuilder.add(param.getKey(), param_value);
+                    } else {
+                        bodyBuilder.addEncoded(param.getKey(), param_value);
+                    }
                 }
                 this.body = bodyBuilder.build();
             }
