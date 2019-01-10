@@ -19,6 +19,8 @@ import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.webkit.MimeTypeMap;
@@ -49,13 +51,15 @@ import okhttp3.internal.Util;
  * immutable.
  */
 public class Request implements Callback {
-    private Context ctx                         = null;
+    // Inherited from Request
     private HttpUrl url                         = null;
-    private String path                         = null;
     private String method                       = "";
     private Headers headers                     = null;
     private @Nullable RequestBody body          = null;
     private Object tag                          = null;
+
+    private Context ctx                         = null;
+    private String path                         = null;
     private DBHelper db                         = null;
     private ArrayList<KeyValuePair> params      = null;
     private ArrayList<KeyValuePair> queries     = null;
@@ -65,19 +69,20 @@ public class Request implements Callback {
     private boolean isFinished                  = false;
 
     Request(Builder builder) {
-        this.ctx                = builder.ctx;
-        this.url                = builder.url;
-        this.path               = builder.path;
-        this.method             = builder.method;
-        this.headers            = builder.headers.build();
-        this.body               = builder.body;
-        this.tag                = builder.tag != null ? builder.tag : this;
-        this.db                 = builder.db;
-        this.params             = builder.params;
-        this.queries            = builder.queries;
-        this.requestHandler     = builder.requestHandler;
-        this.call               = builder.call;
-        this.cacheControl       = builder.cacheControl;
+        this.url                                = builder.url;
+        this.method                             = builder.method;
+        this.headers                            = builder.headers.build();
+        this.body                               = builder.body;
+        this.tag                                = builder.tag != null ? builder.tag : this;
+
+        this.ctx                                = builder.ctx;
+        this.path                               = builder.path;
+        this.db                                 = builder.db;
+        this.params                             = builder.params;
+        this.queries                            = builder.queries;
+        this.requestHandler                     = builder.requestHandler;
+        this.call                               = builder.call;
+        this.cacheControl                       = builder.cacheControl;
     }
 
     public HttpUrl url() {
@@ -113,10 +118,6 @@ public class Request implements Callback {
         return new Builder(this);
     }
 
-    /**
-     * Returns the cache control directives for this response. This is never null, even if this
-     * response contains no {@code Cache-Control} header.
-     */
     public CacheControl cacheControl() {
         CacheControl result = cacheControl;
         return result != null ? result : (cacheControl = CacheControl.parse(headers));
@@ -171,6 +172,9 @@ public class Request implements Callback {
 
     @Override
     public void onFailure(Call call, IOException e) {
+        if (call.isCanceled()) {
+            return;
+        }
         this.call = call;
         String errorMessage = e.getMessage();
         if (e != null) {
@@ -189,7 +193,6 @@ public class Request implements Callback {
         String param_str = this.generateSimpleParam(this.params);
         String url = call.request().url().toString();
         String responseMessage = "";
-
         this.onFinish();
         this.onFail(new Exception(errorMessage));
         if (this.db != null) {
@@ -202,6 +205,9 @@ public class Request implements Callback {
 
     @Override
     public void onResponse(Call call, Response response) throws IOException {
+        if (call.isCanceled()) {
+            return;
+        }
         this.call = call;
         byte[] response_bytes = new byte[0];
         try {
@@ -253,121 +259,73 @@ public class Request implements Callback {
     }
 
     protected void onStart() {
+        if (this.ctx == null) return;
         final Request me = this;
-        if (this.ctx instanceof Activity) {
-            ((Activity) this.ctx).runOnUiThread(new Runnable() {
-                public void run() {
-                    requestHandler.onHTTPRequestStart(me);
-                }
-            });
-        } else {
-            Thread thread = new Thread() {
-                @Override
-                public void run() {
-                    requestHandler.onHTTPRequestStart(me);
-                }
-            };
-            thread.start();
-        }
+        this.safeRun(new Runnable() {
+            @Override
+            public void run() {
+                requestHandler.onHTTPRequestStart(me);
+            }
+        });
     }
 
     protected void onFinish() {
+        if (this.ctx == null) return;
         final Request me = this;
         this.isFinished = true;
-        if (this.ctx instanceof Activity) {
-            ((Activity) this.ctx).runOnUiThread(new Runnable() {
-                public void run() {
-                    requestHandler.onHTTPRequestFinish(me);
-                }
-            });
-        } else {
-            Thread thread = new Thread() {
-                @Override
-                public void run() {
-                    requestHandler.onHTTPRequestFinish(me);
-                }
-            };
-            thread.start();
-        }
+        this.safeRun(new Runnable() {
+            @Override
+            public void run() {
+                requestHandler.onHTTPRequestFinish(me);
+            }
+        });
     }
 
     protected void onSuccess(final Response response, final String responMessage) {
+        if (this.ctx == null) return;
         final Request me = this;
-        if (this.ctx instanceof Activity) {
-            ((Activity) this.ctx).runOnUiThread(new Runnable() {
-                public void run() {
-                    requestHandler.onHTTPRequestSuccess(me, response, responMessage);
-                }
-            });
-        } else {
-            Thread thread = new Thread() {
-                @Override
-                public void run() {
-                    requestHandler.onHTTPRequestSuccess(me, response, responMessage);
-                }
-            };
-            thread.start();
-        }
+        this.safeRun(new Runnable() {
+            @Override
+            public void run() {
+                requestHandler.onHTTPRequestSuccess(me, response, responMessage);
+            }
+        });
     }
 
     protected void onFail(final Throwable error) {
+        if (this.ctx == null) return;
         final Request me = this;
-        if (this.ctx instanceof Activity) {
-            ((Activity) this.ctx).runOnUiThread(new Runnable() {
-                public void run() {
-                    requestHandler.onHTTPRequestFailure(me, error);
-                }
-            });
-        } else {
-            Thread thread = new Thread() {
-                @Override
-                public void run() {
-                    requestHandler.onHTTPRequestFailure(me, error);
-                }
-            };
-            thread.start();
-        }
+        this.safeRun(new Runnable() {
+            @Override
+            public void run() {
+                requestHandler.onHTTPRequestFailure(me, error);
+            }
+        });
     }
 
     protected void onRescue(final String recoveredResponse) {
+        if (this.ctx == null) return;
         final Request me = this;
-        if (this.ctx instanceof Activity) {
-            ((Activity) this.ctx).runOnUiThread(new Runnable() {
-                public void run() {
-                    requestHandler.onHTTPRequestRescue(me, recoveredResponse);
-                }
-            });
-        } else {
-            Thread thread = new Thread() {
-                @Override
-                public void run() {
-                    requestHandler.onHTTPRequestRescue(me, recoveredResponse);
-                }
-            };
-            thread.start();
-        }
+        this.safeRun(new Runnable() {
+            @Override
+            public void run() {
+                requestHandler.onHTTPRequestRescue(me, recoveredResponse);
+            }
+        });
     }
 
     protected void onNetworkError() {
+        if (this.ctx == null) return;
         final Request me = this;
-        if (this.ctx instanceof Activity) {
-            ((Activity) this.ctx).runOnUiThread(new Runnable() {
-                public void run() {
-                    requestHandler.onHTTPRequestNetworkError(me);
-                }
-            });
-        } else {
-            Thread thread = new Thread() {
-                @Override
-                public void run() {
-                    requestHandler.onHTTPRequestNetworkError(me);
-                }
-            };
-            thread.start();
-        }
+        this.safeRun(new Runnable() {
+            @Override
+            public void run() {
+                requestHandler.onHTTPRequestNetworkError(me);
+            }
+        });
     }
 
-    public static class Builder {
+    public static class Builder extends okhttp3.Request.Builder {
         private Context ctx                         = null;
         private HttpUrl url                         = null;
         private String path                         = null;
@@ -387,35 +345,35 @@ public class Request implements Callback {
 
         public Builder() {
             super();
-            this.method         = HttpMethod.GET;
-            this.headers        = new Headers.Builder();
+            this.method                             = HttpMethod.GET;
+            this.headers                            = new Headers.Builder();
         }
 
         public Builder(Context ctx) {
             super();
-            this.method         = HttpMethod.GET;
-            this.headers        = new Headers.Builder();
+            this.method                             = HttpMethod.GET;
+            this.headers                            = new Headers.Builder();
             this.context(ctx);
         }
 
         public Builder(Request request) {
-            this.ctx                = request.ctx;
-            this.url                = request.url;
-            this.path               = request.path;
-            this.method             = request.method;
-            this.headers            = request.headers.newBuilder();
-            this.body               = request.body;
-            this.tag                = request.tag;
-            this.db                 = request.db;
-            this.params             = request.params;
-            this.queries            = request.queries;
-            this.requestHandler     = request.requestHandler;
-            this.cacheControl       = request.cacheControl;
-            this.call               = request.call;
+            this.ctx                                = request.ctx;
+            this.url                                = request.url;
+            this.path                               = request.path;
+            this.method                             = request.method;
+            this.headers                            = request.headers.newBuilder();
+            this.body                               = request.body;
+            this.tag                                = request.tag;
+            this.db                                 = request.db;
+            this.params                             = request.params;
+            this.queries                            = request.queries;
+            this.requestHandler                     = request.requestHandler;
+            this.cacheControl                       = request.cacheControl;
+            this.call                               = request.call;
         }
 
         public Builder context(Context ctx){
-            this.ctx = ctx;
+            this.ctx                                = ctx;
             return this;
         }
 
@@ -776,4 +734,14 @@ public class Request implements Callback {
             return this.body;
         }
     }
+
+    private void safeRun(Runnable task) {
+        if (this.ctx instanceof Activity) {
+            new Handler(Looper.getMainLooper()).post(task);
+        } else {
+            new Thread(task).start();
+        }
+    }
+
+
 }

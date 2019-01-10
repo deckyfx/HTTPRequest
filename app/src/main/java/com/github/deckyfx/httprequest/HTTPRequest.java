@@ -1,8 +1,6 @@
 package com.github.deckyfx.httprequest;
 
 import android.content.Context;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 
 import com.github.deckyfx.httprequest.dao.DaoMaster;
 import com.github.deckyfx.logging.HttpLoggingInterceptor;
@@ -24,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 import okhttp3.Authenticator;
 import okhttp3.Cache;
 import okhttp3.CacheControl;
-import okhttp3.Call;
 import okhttp3.Cookie;
 import okhttp3.HttpUrl;
 import okhttp3.Interceptor;
@@ -33,16 +30,15 @@ import okhttp3.OkHttpClient;
 /**
  * Created by decky on 9/8/16.
  */
-public class HTTPRequest {
-    public static final String REQUEST_CACHE_DB_NAME            = "httprequest.db";
+public class HTTPRequest extends OkHttpClient {
+    protected static final String REQUEST_CACHE_DB_NAME            = "httprequest.db";
 
-    private Context                 mContext;
-    private OkHttpClient            mHTTPClient;
+    private DBHelper                DB;
+    private HTTPClient              mDefaultClient;
     private HttpUrl                 mBaseURL;
     private ClearableCookieJar      mCookieStore;
     private ArrayList<Interceptor>  mApplicationInterceptors    = new ArrayList<Interceptor>(),
-                                    mNetworkInterceptors        = new ArrayList<Interceptor>();
-    protected DBHelper              DB;
+            mNetworkInterceptors        = new ArrayList<Interceptor>();
     private Cache                   mRequestCache;
     private CacheControl            mCacheControl;
     private int                     mConnectTimeOut             = 30;
@@ -50,10 +46,16 @@ public class HTTPRequest {
     private int                     mReadTimeOut                = 30;
     private HttpLoggingInterceptor  mLogInterceptor;
     private ChuckInterceptor        mChuckInterceptor;
+    private Authenticator           mAuthenticator;
 
-    public HTTPRequest(Context context){
-        this.mContext = context;
-        this.DB = new DBHelper(this.mContext, DaoMaster.class, REQUEST_CACHE_DB_NAME);
+    public HTTPRequest() {
+
+    }
+
+    public HTTPRequest setupDBCache(Context ctx) {
+        this.DB = new DBHelper(ctx, DaoMaster.class, REQUEST_CACHE_DB_NAME);
+        this.mDefaultClient.newClientBuilder();
+        return this;
     }
 
     public HashMap<String, Cookie> getCookies(){
@@ -70,196 +72,189 @@ public class HTTPRequest {
         return result;
     }
 
-    public void setBaseURL(HttpUrl baseURL) {
+    public HTTPRequest setBaseURL(HttpUrl baseURL) {
         if (baseURL == null) throw new NullPointerException("url == null");
         this.mBaseURL = baseURL;
+        return this;
     }
 
-    public void setBaseURL(String baseURL){
+    public HTTPRequest setBaseURL(String baseURL){
         HttpUrl parsed = HttpUrl.parse(baseURL);
         if (parsed == null) throw new IllegalArgumentException("unexpected url: " + baseURL);
         this.setBaseURL(parsed);
+        return this;
     }
 
     public HttpUrl getBaseURL(){
         return this.mBaseURL;
     }
 
-    public OkHttpClient getHTTPCLient(){
-        return this.mHTTPClient;
+    public CacheControl getCacheControl(){
+        return this.mCacheControl;
     }
 
-    public OkHttpClient getCopyHTTPCLient(){
-        return this.mHTTPClient.newBuilder().build();
+    public ClearableCookieJar getCookieStore(){
+        return this.mCookieStore;
     }
 
-    public void enableHTTPLogging(){
+    public DBHelper getDBCache(){
+        return this.DB;
+    }
+
+    public HTTPRequest enableHTTPLogging(){
         this.mLogInterceptor = new HttpLoggingInterceptor();
         this.mLogInterceptor.setLevel(HttpLoggingInterceptor.Level.BASIC);
+        return this;
     }
 
-    public void enableHTTPLogging(HttpLoggingInterceptor.Level level){
+    public HTTPRequest enableHTTPLogging(HttpLoggingInterceptor.Level level){
         this.mLogInterceptor = new HttpLoggingInterceptor();
         this.mLogInterceptor.setLevel(level);
+        return this;
     }
 
-    public void enableChuckLogging(boolean notification){
-        this.mChuckInterceptor = new ChuckInterceptor(this.mContext);
+    public HTTPRequest enableChuckLogging(Context ctx, boolean notification){
+        this.mChuckInterceptor = new ChuckInterceptor(ctx);
         this.mChuckInterceptor.showNotification(notification);
+        return this;
     }
 
-    public void initCookieStore(){
-        this.mCookieStore =  new PersistentCookieJar(new SetCookieCache(), new SharedPrefsCookiePersistor(this.mContext));
+    public HTTPRequest initCookieStore(Context ctx){
+        this.mCookieStore =  new PersistentCookieJar(new SetCookieCache(), new SharedPrefsCookiePersistor(ctx));
+        return this;
     }
 
-    public void initRequestCache(){
+    public HTTPRequest initRequestCache(){
         this.mRequestCache =  new Cache(new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString()), 10 * 1024 * 1024);
+        return this;
     }
 
-    public void setRequestTimeOut(int timeOut) {
+    public HTTPRequest setRequestTimeOut(int timeOut) {
         this.mConnectTimeOut = timeOut;
         this.mWriteTimeOut = timeOut;
         this.mReadTimeOut = timeOut;
+        return this;
     }
 
-    public void addApplicationInterceptor(Interceptor interceptor) {
+    public HTTPRequest addApplicationInterceptor(Interceptor interceptor) {
         this.mApplicationInterceptors.add(interceptor);
+        return this;
     }
 
     public ArrayList<Interceptor> getApplicationInterceptors() {
         return this.mApplicationInterceptors;
     }
 
-    public void removeApplicationInterceptors(int index) {
+    public HTTPRequest removeApplicationInterceptors(int index) {
         this.mApplicationInterceptors.remove(index);
+        return this;
     }
 
-    public void addNetworkInterceptor(Interceptor interceptor) {
+    public HTTPRequest addNetworkInterceptor(Interceptor interceptor) {
         this.mNetworkInterceptors.add(interceptor);
+        return this;
     }
 
     public ArrayList<Interceptor> getNetworkInterceptors() {
         return this.mNetworkInterceptors;
     }
 
-    public void removeNetworkInterceptors(int index) {
+    public HTTPRequest removeNetworkInterceptors(int index) {
         this.mNetworkInterceptors.remove(index);
+        return this;
     }
 
-    public void removeAllInterceptors() {
+    public HTTPRequest removeAllInterceptors() {
         this.mApplicationInterceptors.removeAll(this.mApplicationInterceptors);
         this.mNetworkInterceptors.removeAll(this.mNetworkInterceptors);
+        return this;
     }
 
-    public void setCacheControl(CacheControl cacheControl){
+    public HTTPRequest setCacheControl(CacheControl cacheControl){
         this.mCacheControl = cacheControl;
+        return this;
     }
 
-    public OkHttpClient createHTTPClient(int timeout, ClearableCookieJar cookieJar, Cache cache,
-                                         ArrayList<Interceptor> interceptors, ArrayList<Interceptor> networkInterceptor,
-                                         Authenticator authenticator) {
-        OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        if (cookieJar != null) {
-            builder = builder.cookieJar(cookieJar);
-        }
-        if (timeout > 0) {
-            builder = builder.connectTimeout(timeout, TimeUnit.SECONDS)
-                    .writeTimeout(timeout, TimeUnit.SECONDS)
-                    .readTimeout(timeout, TimeUnit.SECONDS);
-        }
-        if (cache != null) {
-            builder = builder.cache(new Cache(new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString()), 10 * 1024 * 1024));  // 10 MiB
-        }
-        if (this.mLogInterceptor != null) {
-            builder = builder.addInterceptor(this.mLogInterceptor);
-        }
-        if (this.mChuckInterceptor != null) {
-            builder = builder.addInterceptor(this.mChuckInterceptor);
-        }
-        if (interceptors != null) {
-            for (int i = 0; i < interceptors.size(); i++) {
-                if (interceptors.get(i) != null) {
-                    builder = builder.addInterceptor(interceptors.get(i));
-                }
-            }
-        }
-        if (networkInterceptor != null) {
-            for (int i = 0; i < networkInterceptor.size(); i++) {
-                if (networkInterceptor.get(i) != null) {
-                    builder = builder.addNetworkInterceptor(networkInterceptor.get(i));
-                }
-            }
-        }
-        if (authenticator != null) {
-            builder = builder.authenticator(authenticator);
-        }
-        return builder.build();
-    }
-
-    public void initHTTPCLient(){
-        this.mHTTPClient = this.createHTTPClient(this.mConnectTimeOut, this.mCookieStore,
-                this.mRequestCache, this.mApplicationInterceptors, this.mNetworkInterceptors,
-                null);
-    }
-
-    public boolean isInitialized() {
-        return (this.mHTTPClient != null);
-    }
-
-    public void clearCache() {
+    public HTTPRequest clearCache() {
         try {
             this.mRequestCache.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
         this.mCookieStore.clear();
+        return this;
     }
 
-    public void clearRequestCache() {
+    public HTTPRequest clearRequestCache() {
         this.DB.FlushAll();
+        return this;
     }
 
-    public boolean isNetworkAvailable(Context ctx) {
-        NetworkInfo localNetworkInfo = ((ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
-        return (localNetworkInfo != null) && (localNetworkInfo.isConnected());
+    public HTTPRequest initDefaultClient() {
+        HTTPClient.ClientBuilder ClientBuilder = new HTTPClient.ClientBuilder();
+        if (this.mCookieStore != null) {
+            ClientBuilder.getBuilder().cookieJar(this.mCookieStore);
+        }
+        if (this.mConnectTimeOut > 0) {
+            ClientBuilder.getBuilder().connectTimeout(this.mConnectTimeOut, TimeUnit.SECONDS)
+                    .writeTimeout(this.mConnectTimeOut, TimeUnit.SECONDS)
+                    .readTimeout(this.mConnectTimeOut, TimeUnit.SECONDS);
+        }
+        if (this.mRequestCache != null) {
+            ClientBuilder.getBuilder().cache(new Cache(new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString()), 10 * 1024 * 1024));  // 10 MiB
+        }
+        if (this.mLogInterceptor != null) {
+            ClientBuilder.getBuilder().addInterceptor(this.mLogInterceptor);
+        }
+        if (this.mChuckInterceptor != null) {
+            ClientBuilder.getBuilder().addInterceptor(this.mChuckInterceptor);
+        }
+        if (this.mApplicationInterceptors != null) {
+            for (int i = 0; i < this.mApplicationInterceptors.size(); i++) {
+                if (this.mApplicationInterceptors.get(i) != null) {
+                    ClientBuilder.getBuilder().addInterceptor(this.mApplicationInterceptors.get(i));
+                }
+            }
+        }
+        if (this.mNetworkInterceptors != null) {
+            for (int i = 0; i < this.mNetworkInterceptors.size(); i++) {
+                if (this.mNetworkInterceptors.get(i) != null) {
+                    ClientBuilder.getBuilder().addNetworkInterceptor(this.mNetworkInterceptors.get(i));
+                }
+            }
+        }
+        if (this.mAuthenticator != null) {
+            ClientBuilder.getBuilder().authenticator(this.mAuthenticator);
+        }
+        ClientBuilder.setBaseURL(this.getBaseURL());
+        ClientBuilder.setCacheControl(this.getCacheControl());
+        ClientBuilder.setCookieStore(this.getCookieStore());
+        ClientBuilder.setDBCache(this.getDBCache());
+        this.mDefaultClient = new HTTPClient(ClientBuilder.build());
+        return this;
+    }
+
+    public HTTPClient getDefaultClient() {
+        return this.mDefaultClient;
     }
 
     public void send(Request request) {
-        Request.Builder builder = request.newBuilder();
-        if (request.url() == null && request.path() != null && this.mBaseURL != null) builder.url(this.mBaseURL).path(request.path());
-        if (this.DB != null) builder.dbHelper(this.DB);
-        if (this.mCacheControl != null && request.cacheControl() == null) builder.cacheControl(this.mCacheControl);
-        request = builder.build(true);
-
-        // Final check url can not be empty
-        if (request.url() == null) throw new NullPointerException("url == null");
-
-        okhttp3.Request req = new okhttp3.Request.Builder()
-            .url(request.url())
-            .cacheControl(request.cacheControl())
-            .tag(request.tag())
-            .method(request.method(), request.body())
-            .headers(request.headers())
-            .build();
-
-        Call call               = this.mHTTPClient.newCall(req);
-        request.onStart();
-        if (!this.isNetworkAvailable(request.context())) {
-            request.onNetworkError();
-            return;
-        }
-        call.enqueue(request);
+        this.getDefaultClient().send(request);
     }
 
-    public void cancelAllRequest(Context ctx){
-        // Should watch this two line bellow! a dangerous method
-        // Likely will trigger crash when type for suggestion search
-        this.mHTTPClient.dispatcher().cancelAll();
-        for (Call call : this.mHTTPClient.dispatcher().queuedCalls()) {
-            call.cancel();
-        }
-        for (Call call : this.mHTTPClient.dispatcher().runningCalls()) {
-            call.cancel();
-        }
+    public void cancelRequests(){
+        this.getDefaultClient().cancelRequests();
+    }
+
+    public boolean isNetworkAvailable(Context ctx) {
+        return this.getDefaultClient().isNetworkAvailable(ctx);
+    }
+
+    public HTTPClient newClient() {
+        return new HTTPClient(this.mDefaultClient.newClientBuilder());
+    }
+
+    public HTTPClient.ClientBuilder newClientBuilder() {
+        return this.mDefaultClient.newClientBuilder();
     }
 }

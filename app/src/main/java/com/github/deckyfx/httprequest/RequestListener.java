@@ -1,5 +1,6 @@
 package com.github.deckyfx.httprequest;
 
+
 import okhttp3.Response;
 
 /**
@@ -10,6 +11,7 @@ public interface RequestListener {
     void onHTTPRequestFinish(Request request);
     void onHTTPRequestSuccess(Request request, Response response, String responseBody);
     void onHTTPRequestFailure(Request request, Throwable error);
+
     void onHTTPRequestRescue(Request request, String recoveredResponse);
     void onHTTPRequestNetworkError(Request request);
 }
