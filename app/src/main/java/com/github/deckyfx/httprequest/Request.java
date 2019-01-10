@@ -325,7 +325,7 @@ public class Request implements Callback {
         });
     }
 
-    public static class Builder extends okhttp3.Request.Builder {
+    public static class Builder {
         private Context ctx                         = null;
         private HttpUrl url                         = null;
         private String path                         = null;
