@@ -54,7 +54,6 @@ public class HTTPRequest extends OkHttpClient {
 
     public HTTPRequest setupDBCache(Context ctx) {
         this.DB = new DBHelper(ctx, DaoMaster.class, REQUEST_CACHE_DB_NAME);
-        this.mDefaultClient.newClientBuilder();
         return this;
     }
 
