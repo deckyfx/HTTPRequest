@@ -42,10 +42,15 @@ public class HTTPClient {
     }
 
     public HTTPClient(ClientBuilder clientBuilder) {
+        this.setClientBuilder(clientBuilder);
+    }
+
+    public HTTPClient setClientBuilder(ClientBuilder clientBuilder) {
         this.client         = clientBuilder.getBuilder().build();
         this.mBaseURL       = clientBuilder.mBaseURL;
         this.mCacheControl  = clientBuilder.mCacheControl;
         this.mCookieStore   = clientBuilder.mCookieStore;
+        return this;
     }
 
     public ClientBuilder newClientBuilder() {
