@@ -58,7 +58,7 @@ public class HTTPClient {
     }
 
     public static final class ClientBuilder {
-        private final OkHttpClient.Builder builder;
+        private OkHttpClient.Builder builder;
         private HttpUrl mBaseURL;
         private DBHelper DB;
         private CacheControl mCacheControl;
@@ -82,11 +82,16 @@ public class HTTPClient {
         }
 
         ClientBuilder(OkHttpClient.Builder builder) {
-            this.builder = builder;
+            this.setBuilder(builder);
         }
 
         public OkHttpClient.Builder getBuilder() {
             return this.builder;
+        }
+
+        public ClientBuilder setBuilder(OkHttpClient.Builder builder) {
+            this.builder = builder;
+            return this;
         }
 
         public HTTPClient build() {
