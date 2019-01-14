@@ -46,15 +46,17 @@ public class HTTPClient {
     }
 
     public HTTPClient setClientBuilder(ClientBuilder clientBuilder) {
-        this.client         = clientBuilder.getBuilder().build();
         this.mBaseURL       = clientBuilder.mBaseURL;
         this.mCacheControl  = clientBuilder.mCacheControl;
         this.mCookieStore   = clientBuilder.mCookieStore;
+        this.DB             = clientBuilder.DB;
+        this.client         = clientBuilder.getBuilder().build();
         return this;
     }
 
     public ClientBuilder newClientBuilder() {
-        return new ClientBuilder(this);
+        ClientBuilder clientbuilder = new ClientBuilder(this);
+        return clientbuilder;
     }
 
     public static final class ClientBuilder {
@@ -70,15 +72,23 @@ public class HTTPClient {
         }
 
         ClientBuilder(HTTPClient client) {
-            this.builder = client.client.newBuilder();
-        }
-
-        ClientBuilder(OkHttpClient client) {
-            this.builder = client.newBuilder();
+            this.mBaseURL       = client.mBaseURL;
+            this.mCacheControl  = client.mCacheControl;
+            this.mCookieStore   = client.mCookieStore;
+            this.DB             = client.DB;
+            this.builder        = client.client.newBuilder();
         }
 
         ClientBuilder(ClientBuilder builder) {
-            this.builder = builder.getBuilder();
+            this.mBaseURL       = builder.mBaseURL;
+            this.mCacheControl  = builder.mCacheControl;
+            this.mCookieStore   = builder.mCookieStore;
+            this.DB             = builder.DB;
+            this.builder        = builder.getBuilder();
+        }
+
+        ClientBuilder(OkHttpClient client) {
+            this.setBuilder(client.newBuilder());
         }
 
         ClientBuilder(OkHttpClient.Builder builder) {
