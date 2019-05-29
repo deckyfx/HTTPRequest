@@ -161,6 +161,10 @@ public class HTTPClient {
                 .headers(request.headers())
                 .build();
 
+        if (!request.validContext()) {
+            return;
+        }
+
         Call call               = this.client.newCall(req);
         request.onStart();
         if (!this.isNetworkAvailable(request.context())) {

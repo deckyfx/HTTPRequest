@@ -16,13 +16,17 @@
 package com.github.deckyfx.httprequest;
 
 import android.app.Activity;
+import android.app.Application;
+import android.app.Service;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v7.app.AppCompatActivity;
 import android.webkit.MimeTypeMap;
 
 import java.io.File;
@@ -175,6 +179,9 @@ public class Request implements Callback {
         if (call.isCanceled()) {
             return;
         }
+        if (!this.validContext()) {
+            return;
+        }
         this.call = call;
         String errorMessage = e.getMessage();
         if (e != null) {
@@ -206,6 +213,9 @@ public class Request implements Callback {
     @Override
     public void onResponse(Call call, Response response) throws IOException {
         if (call.isCanceled()) {
+            return;
+        }
+        if (!this.validContext()) {
             return;
         }
         this.call = call;
@@ -259,7 +269,6 @@ public class Request implements Callback {
     }
 
     protected void onStart() {
-        if (this.ctx == null) return;
         final Request me = this;
         this.safeRun(new Runnable() {
             @Override
@@ -270,7 +279,6 @@ public class Request implements Callback {
     }
 
     protected void onFinish() {
-        if (this.ctx == null) return;
         final Request me = this;
         this.isFinished = true;
         this.safeRun(new Runnable() {
@@ -282,7 +290,6 @@ public class Request implements Callback {
     }
 
     protected void onSuccess(final Response response, final String responMessage) {
-        if (this.ctx == null) return;
         final Request me = this;
         this.safeRun(new Runnable() {
             @Override
@@ -293,7 +300,6 @@ public class Request implements Callback {
     }
 
     protected void onFail(final Throwable error) {
-        if (this.ctx == null) return;
         final Request me = this;
         this.safeRun(new Runnable() {
             @Override
@@ -736,6 +742,9 @@ public class Request implements Callback {
     }
 
     private void safeRun(Runnable task) {
+        if (!this.validContext()) {
+            return;
+        }
         if (this.ctx instanceof Activity) {
             new Handler(Looper.getMainLooper()).post(task);
         } else {
@@ -743,5 +752,22 @@ public class Request implements Callback {
         }
     }
 
-
+    public Boolean validContext() {
+        if (this.ctx == null) {
+            return false;
+        } else if (this.ctx instanceof AppCompatActivity) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                if (((Activity) this.ctx).isFinishing() || ((Activity) this.ctx).isDestroyed()) {
+                    return false;
+                }
+            } else {
+                if (((Activity) this.ctx).isFinishing()) {
+                    return false;
+                }
+            }
+        } else if (this.ctx instanceof Service) {
+        } else if (this.ctx instanceof Application) {
+        }
+        return true;
+    }
 }
